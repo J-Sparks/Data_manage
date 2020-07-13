@@ -1,0 +1,36 @@
+# import data
+new_enr <- read_csv("C:/Users/jk99/Desktop/DATA 202001/STU_ENROLLMENT_SPRING20.csv") 
+
+library(stringr)
+#Fall FTIC only
+FTIC_1stTerm_enr_Fall <- new_enr %>% 
+  filter(Stu_StudentTypeCode == "B" & # for FTIC
+            Stu_LoadIPEDSFTPT=="Full Time" & # full time
+           Stu_AdmissionRecentTypeCode=="B" & # FTIC
+           Stu_DEMO_TIME_FRAME >= 200805 ) %>% # data quality since 200808
+  group_by(STU_ID) %>% 
+  mutate(ID_index = row_number()) %>% 
+  filter(ID_index== 1) %>%  # index for beginner summer and came back fall are duplicated
+  filter(str_detect(Stu_AdmissionTerm, "Fall...")) # for fall semester starters
+#check Fall FTIC2017 1018
+xtabs(~FTIC_1stTerm_enr_Fall$Stu_AdmissionTerm+   FTIC_1stTerm_enr_Fall$Stu_StudentTypeCode)
+
+#Summer FTIC only
+FTIC_1stTerm_enr_Summer <- new_enr %>% 
+  filter(Stu_StudentTypeCode == "B" &
+           Stu_LoadIPEDSFTPT=="Full Time" & Stu_AdmissionRecentTypeCode=="B" & Stu_DEMO_TIME_FRAME >= 200805 ) %>% 
+  group_by(STU_ID) %>% 
+  mutate(ID_index = row_number()) %>% 
+  filter(ID_index== 1) %>% 
+  filter(str_detect(Stu_AdmissionTerm, "Summer...")) # summer starters
+# check Summer FTIC 2017 58
+xtabs(~FTIC_1stTerm_enr_Summer$Stu_AdmissionTerm+   FTIC_1stTerm_enr_Summer$Stu_StudentTypeCode)
+
+# combine Fall and Sumer
+FTIC_All <- rbind(FTIC_1stTerm_enr_Summer,FTIC_1stTerm_enr_Fall)
+xtabs(~FTIC_All$Stu_AdmissionTerm) #FTIC 2017 = 1076
+write.csv(FTIC_All,"FTIC_ALL.csv")
+
+# create new column for Cohort
+
+
