@@ -32,5 +32,11 @@ xtabs(~FTIC_All$Stu_AdmissionTerm) #FTIC 2017 = 1076
 write.csv(FTIC_All,"FTIC_ALL.csv")
 
 # create new column for Cohort
-
+library(tidyr) # for separate and unite()
+# create new column for Cohort
+FTIC_All_cohort <- separate(FTIC_All, col = Stu_AdmissionTerm, into = c("Term", "Cohort"), sep = " ")
+write.csv(FTIC_All_cohort,"FTIC_All_cohort.csv")
+#check FTIC2017 == 1076
+xtabs(~FTIC_All_cohort$Cohort)
+xtabs(~FTIC_All_cohort$Cohort+FTIC_All_cohort$Stu_CollegeCode)
 
