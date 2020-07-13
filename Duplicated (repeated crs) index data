@@ -1,0 +1,99 @@
+---
+title: "R Notebook"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+# library we need
+library(tidyselect)
+
+# arrange data with two columns
+no_dupl_mac1147 %>% 
+ df_01 <-  select(c(1,3) %>% 
+ arrange(df_01, df_01$MAC1147TIME) %>% 
+ head(df_01)
+```
+
+```{r}
+#length of unique id counts
+length(unique(df01$STU_ID))
+```
+```{r}
+summary(df01) # 352-329 = 23 duplicated elements
+```
+```{r}
+df04 %>% arrange(+(MAC1147TIME), .by_group = TRUE)
+tail(df04,100)
+```
+
+```{r}
+# getting FTIC for HMCSEfr0m 2008 to 2018
+glimpse(M4)
+fticID_2008_2017 <- filter(M4, M4$Cohort >= 2008 | M4$Cohort <= 2018)
+library(dplyr)
+fticID_2008_2017 <-  
+  filter(fticID_2008_2017, fticID_2008_2017$Stu_CollegeBegin == "Science and Engineering")
+table(fticID_2008_2017$Cohort)
+
+
+
+
+```
+
+```{r}
+#only id and cohort
+ftic_ID <- select(fticID_2008_2017, 1,2)
+
+#mac 2311 with grade
+mac2311_grade_pass <- filter(crs, crs$Course_CrsCombined == "MAC2311")
+
+#merge with FTIC ID's
+mac2311_grade_pass_selec <- select(mac2311_grade_pass, 1, "Course_DEMO_TIME_FRAME","Course_CrsCombined","Course_StuMajorDesc", "Course_CrsGradeAwarded","PASS" )
+mac2311_all_ftic <- merge(mac2311_grade_pass_selec, ftic_ID, by = "STU_ID", all.y = TRUE)
+head(mac2311_all_ftic,50)
+
+
+```
+
+```{r}
+now_all_mac2311_hmcse_ftic_08to18 <- na.omit(mac2311_all_ftic)
+head(now_all_mac2311_hmcse_ftic_08to18)
+
+```
+
+```{r}
+table(now_all_mac2311_hmcse_ftic_08to18$Cohort, now_all_mac2311_hmcse_ftic_08to18$PASS)
+```
+```{r}
+#testing duplicated for index
+df <- now_all_mac2311_hmcse_ftic_08to18
+df <- df %>% 
+  group_by(STU_ID) %>% 
+  mutate(grouped_id = row_number())
+df
+# showing that the group_id =2 means repeated the couses and now need to filter grouped_id=2 for filterling for first grade
+
+```
+```{r}
+df <- as.data.frame(df)
+# data for repeard ID's == 2
+table(df$grouped_id, df$Cohort)
+# 1= once 2= two time 3= three time 4= four times
+
+```
+
+
+```{r}
+df$grouped_id <- factor(df$grouped_id)
+glimpse(df)
+
+rep_mac2311 <- filter(df, df$grouped_id == "2")
+
+```
+
