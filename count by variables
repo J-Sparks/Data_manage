@@ -1,0 +1,168 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+crs <- read.csv(file.choose(), header = T) # crs dataset
+colnames(crs)
+```
+```{r}
+library(dplyr)
+crs_coll <- crs %>% 
+  group_by(Course_CrsCollege, Course_DEMO_TIME_FRAME) %>% 
+  summarize(count=n()) 
+crs_coll
+```
+```{r}
+crs_lower_HMCSE <- filter(crs, crs$Course_CrsCollege == "Science and Engineering", crs$Course_CrsNumber < 3000)
+crs_lower_HMCSE_01 <- crs_lower_HMCSE %>% 
+   group_by(Course_DEMO_TIME_FRAME, Course_CrsDepartment) %>% 
+  summarize(count=n()) 
+crs_lower_HMCSE_01
+#write.table(crs_lower_HMCSE_01, "HMCSE_CRS_TIME.csv", sep= ",")
+```
+
+```{r}
+crs_lower_HMCSE <- filter(crs, crs$Course_CrsCollege == "Science and Engineering", crs$Course_CrsNumber < 3000)
+crs_lower_HMCSE_02 <- crs_lower_HMCSE %>% 
+   group_by( Course_CrsCombined,Course_DEMO_TIME_FRAME) %>% 
+  summarize(count=n()) 
+crs_lower_HMCSE_02
+write.table(crs_lower_HMCSE_02, "MAT_CRS_TIME.csv", sep = ",")
+```
+
+```{r}
+crs_lower_MAT<- filter(crs_lower_HMCSE, crs_lower_HMCSE$Course_CrsDepartmentCode=="MAT")
+crs_lower_MAT <- crs_lower_MAT %>% 
+   group_by(Course_CrsCombined, Course_DEMO_TIME_FRAME) %>% 
+  summarize(count=n()) 
+crs_lower_MAT
+```
+```{r}
+enr <- read.csv(file.choose(), header = T)
+FTIC_ID_UWF0818 <- read.csv(file.choose(), header = T)
+FTIC_terms <- merge(FTIC_ID_UWF0818, enr, by = "STU_ID", all.x=T)
+head(FTIC_terms,20)
+```
+```{r}
+FTIC_terms <- filter(FTIC_terms, FTIC_terms$Stu_DegHighestHeldCode == "H")
+#write.csv(FTIC_terms, "FTIC_terms.csv")
+FTIC_terms$Stu_DEMO_TIME_FRAME <- as.numeric(FTIC_terms$Stu_DEMO_TIME_FRAME)
+#FTIC_terms[order(FTIC_terms$Stu_DEMO_TIME_FRAME),] this for temperary
+```
+
+```{r}
+
+
+library(nycflights13)
+FTIC_T <- FTIC_terms %>% 
+
+  arrange(Stu_TotalInstHours) %>% 
+group_by(STU_ID) 
+
+ head(FTIC_T)
+ 
+ FTIC_arr <- FTIC_T %>% 
+   group_by(STU_ID)
+ tail(FTIC_arr,10)
+
+
+```
+
+```{r}
+df_FTIC <- FTIC_terms %>% 
+   group_by(STU_ID) %>%
+  mutate(grouped_id_term =  row_number())
+head(df_FTIC,30)
+```
+```{r}
+colnames(df_FTIC)
+```
+
+```{r}
+table( df_FTIC$Stu_StudentType, df_FTIC$Stu_DEMO_TIME_FRAME)
+```
+
+
+
+```{r}
+### graph for FTIC number
+df_FTIC <- as.data.frame(df_FTIC)
+df_FTIC_recent <- filter(df_FTIC, df_FTIC$Stu_Term == "Spring 2019")
+table(df_FTIC_recent$Stu_StudentType, df_FTIC_recent$Stu_College)
+```
+```{r}
+
+
+p1 <- df_FTIC_recent %>% 
+    group_by(Stu_College) %>% 
+  summarise(count=n()) %>% 
+  plot_ly(x=~Stu_College,
+          y= ~count,
+          color=rainbow(6),
+          type="bar") %>% 
+  layout(xaxis=list(title="College UWF"),
+         yaxis=list(title="Count"))
+p1
+
+```
+
+```{r}
+
+p2 <- df_FTIC_recent %>% 
+    group_by(Cohort) %>% 
+  summarise(count=n()) %>% 
+  plot_ly(x=~Cohort,
+          y= ~count,
+          color=rainbow(11),
+          type="bar") %>% 
+  layout(xaxis=list(title="Students Cohort"),
+         yaxis=list(title="Count"))
+p2
+
+```
+```{r}
+colnames(df_FTIC)
+
+```
+
+```{r}
+my_df <- df_FTIC %>% 
+  select(1:4,"Stu_GPATermHours","Stu_GPAGradePoints","Stu_TotalUniversityHours","Stu_College","Stu_Department", "Stu_Ethnicity")  
+my_df
+  
+```
+
+
+
+```{r}
+### FTIC_terms
+library(dplyr)
+FTIC_terms %>% 
+  group_by(STU_ID) %>% 
+  arrange(Stu_Term, .by_group = TRUE)
+head(FTIC_terms, 20)
+```
+```{r}
+
+MY_FTIC_temrs <- group_by(FTIC_terms, STU_ID) %>%  arrange(Stu_DEMO_TIME_FRAME, .by_group=TRUE)
+head(MY_FTIC_temrs)
+```
+
+```{r}
+
+MY_FTIC_temr_order <- MY_FTIC_temrs %>%
+  mutate(grouped_id = row_number())
+head(MY_FTIC_temr_order,20)
+
+```
+
+```{r}
+write.csv(MY_FTIC_temr_order ,"MY_FTIC_term_order.csv")
+```
+
