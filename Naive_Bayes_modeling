@@ -1,0 +1,208 @@
+---
+title: "Naive Bayes Classification_MAC2311"
+output:
+  pdf_document: default
+  html_notebook: default
+  word_document: default
+---
+
+
+
+```{r}
+# dealing with missing data
+library(mice)
+library(VIM)
+# get the completed data set
+#"mymac2311_B"
+#myNBCdf <- mymac2311_B
+#glimpse(myNBCdf) # 1,2,3,11,14,17,21:25
+```
+
+```{r}
+# select coulmns # 1,2,3,11,14,17,21:25
+
+#mydf_B <- select(myNBCdf, 1:3,11,15,19,22:27, "Grade_rank")
+#glimpse(mydf_B)
+```
+```{r}
+write.csv(mydf_B3, "mydf_B3.csv")
+mydf_B3 <- read.csv(file.choose(),header = T)
+summary(mydf_B3) # no missing values
+```
+
+
+```{r}
+hist(mydf_B3$Stu_InstitutionalGPA1)
+```
+```{r}
+summary(mydf_B3$Stu_InstitutionalGPA1)
+sd(mydf_B3$Stu_InstitutionalGPA1) #0.5861
+```
+
+
+
+
+```{r}
+#normalize the data
+#mydf_B3$z_UWFGPA <- as.vector(scale(mydf_B$Stu_InstitutionalGPA1,center= TRUE, scale=TRUE))
+#z_scale[1:6,]
+#hist(mynormaldata$z_UWFGPA)
+#mynormaldata <- select(mynormaldata, -10)
+mynormaldata <- re_normaldata
+write.csv(mynormaldata,"mynormaldata.csv")
+glimpse(mynormaldata)
+summary(mynormaldata)
+```
+
+```{r}
+# data partition
+set.seed(1234)
+ind <- sample(2, nrow(mynormaldata), replace = T, prob = c(0.7,0.3))
+train <- mynormaldata[ind==1,]
+test <- mynormaldata[ind==2,]
+```
+
+
+```{r}
+# correlation
+library(psych)
+pairs.panels(mynormaldata[c(6,7,10)], cex=1)
+```
+
+
+```{r}
+library(naivebayes)
+#p(MAC2311=1|Grand_rank =1) = {p(MAC2311=1)*p(Grade_rank=1|MAC2311=1)}/p(Grad_rank=1)
+NBC_modelV1 <- naive_bayes(MAC2311~., data=mynormaldata)
+NBC_modelV1
+
+```
+
+```{r}
+plot(NBC_modelV1)
+```
+```{r}
+p <- predict(NBC_modelV1, mynormaldata, type="prob")
+
+head(cbind(p,mynormaldata))
+prediction.B <- cbind(p,mynormaldata)
+write.csv(prediction.B, "Pred.mydataredata.csv")
+```
+
+```{r}
+# to get all table
+
+tables(NBC_modelV1, "Stu_Ethnicity")
+```
+
+```{r}
+tables(NBC_modelV1, "z_UWFGPA")
+```
+```{r}
+tables(NBC_modelV1, "GPA_HIGHSCHOOL")
+
+
+```
+```{r}
+tables(NBC_modelV1, c("Stu_Ethnicity","Grade_rank"))
+```
+
+```{r}
+
+library(caret)
+mynormaldata$MAC2311 <- as.factor(mynormaldata$MAC2311)
+confusionMatrix(predict(NBC_modelV1), mynormaldata$MAC2311)
+
+
+
+```
+
+```{r}
+# test and train
+library(e1071)
+
+trainmodel <- naive_bayes(MAC2311~., data = train, trControl=trainControl(method = "cv", number = 10))
+trainmodel
+train$MAC2311 <- as.factor(train$MAC2311)
+confusionMatrix(predict(trainmodel), train$MAC2311 )
+
+```
+
+```{r}
+testmodel <- naive_bayes(MAC2311~., data = test, trControl=trainControl(method = "cv", number = 10))
+testmodel
+test$MAC2311 <- as.factor(test$MAC2311)
+confusionMatrix(predict(testmodel), test$MAC2311 )
+
+```
+
+```{r}
+p <- predict(NBC_modelV1, mynormaldata, type="prob")
+
+head(cbind(p,mynormaldata))
+prediction.B <- cbind(p,mynormaldata)
+write.csv(prediction.B, "Pred.NBC_modelV1.csv")
+
+```
+
+```{r}
+
+# new data set
+mynormaldata <- NBC_V4
+
+set.seed(1234)
+ind <- sample(2, nrow(mynormaldata), replace = T, prob = c(0.8,0.2))
+train <- mynormaldata[ind==1,]
+test <- mynormaldata[ind==2,]
+
+```
+
+```{r}
+NBC_model1 <- naive_bayes(MAC2311~., data=train,trControl=trainControl(method = "cv", number = 10))
+NBC_model1
+
+```
+
+```{r}
+plot(NBC_model1)
+```
+
+
+
+```{r}
+tables(NBC_model1, c("Stu_Ethnicity","Grade_rank"))
+
+```
+
+```{r}
+tables(NBC_model1, "Course_StuMajorDesc.x")
+```
+
+
+```{r}
+plot(NBC_model1)
+```
+
+```{r}
+confusionMatrix(predict(NBC_model1), train$MAC2311 )
+```
+
+```{r}
+NBC_model2 <- naive_bayes(MAC2311~., data=test)
+NBC_model2
+confusionMatrix(predict(NBC_model2), test$MAC2311 )
+
+
+```
+
+```{r}
+p <- predict(NBC_model1, train, type="prob")
+
+head(cbind(p,train))
+prediction.B <- cbind(p,train)
+write.csv(prediction.B, "Pred.mydataV5.csv")
+
+
+
+```
+
