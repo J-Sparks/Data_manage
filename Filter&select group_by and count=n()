@@ -1,0 +1,29 @@
+# how to filter or select data by variables and count
+library(stringr)
+
+
+mycrs_data <- select(crs_data, 1:4,7,"Course_CrsDepartment", "Course_CrsCollege","Course_CrsCalcCombinedEnrollment",42:44,59:64,67:68,81:85,12)
+mycrs_data_Falls <- mycrs_data %>% filter(str_detect(Course_Term, "Fall...")) # contain Fall in the rows
+
+library(dplyr)
+# need to filter STU_ID with Course_crssuffix == "L" and major also
+L_crs_lower_HMCSE_ID <- filter(crs_lower_HMCSE, crs_lower_HMCSE$Course_CrsSuffix == "L")#47486
+L_ID <- select(L_crs_lower_HMCSE_ID, 1:80)#47486
+#rename(L_ID, c("STU_ID","Stu_DEMO_TIME_FRAME","Course_DEMO_DATA_SOURCE"))
+# merge with all STU_ID from course data who took Lab classes which is .X
+L_enr_ID <- merge(L_ID, STU_ENROLLMENT, by.x = c("STU_ID", "Course_DEMO_TIME_FRAME"), by.y=c("STU_ID","Stu_DEMO_TIME_FRAME"), all.x  = T)
+write.csv(L_enr_ID, "Lab_enr_ID.csv")
+
+newcrs <- read.csv(file.choose(), header = T) # 1250328
+unique(newcrs$Course_DEMO_TIME_FRAME)
+
+crs_1801to1908 <- filter(newcrs, newcrs$Course_DEMO_TIME_FRAME>= 201801) #158725
+unique(crs_1801to1908$Course_DEMO_TIME_FRAME)
+
+# counts for by crs_college
+crs_coll <- crs_1801to1908 %>% 
+  group_by(Course_CrsCollege, Course_DEMO_TIME_FRAME) %>% 
+  summarize(count=n()) 
+crs_coll
+
+
