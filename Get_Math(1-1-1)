@@ -60,10 +60,9 @@ Fall2018MAT <- new_crs %>%
          Course_CrsNumber,Course_CrsSuffix,Course_CrsGradeAwarded,Course_CrsDepartmentCode) 
 
 #Merge with 2018FTICHMCSE
+#Merge with 2018FTICHMCSE
 FTIC2018HMCSE_1termMATH <- merge(FTIC2018HMCSE,Fall2018MAT, by="STU_ID", all.x = TRUE ) %>% 
                             group_by(STU_ID) %>% 
                             arrange(Course_CrsNumber, .by_group=TRUE) %>% 
-  mutate(ID_index = row_number())
-FTIC2018HMCSE_1termMATH
-                            #filter(Course_CrsNumber == max(Course_CrsNumber))  # choose highest math courses
-
+                            mutate(ID_index = row_number()) 
+summary(FTIC2018HMCSE_1termMATH)#467
