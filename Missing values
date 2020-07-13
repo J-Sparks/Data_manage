@@ -1,0 +1,47 @@
+### Dealing with missing data points
+
+library(mice)
+library(VIM)
+
+
+summary(mac2311merge_df)  # HSGPA has 312 missing data
+
+p <- function(x){sum(is.na(x))/length(x)*100}
+apply(mac2311merge_df, 2, p)
+
+#plot 
+md.pattern(mac2311merge_df)
+#showing missing rows and counts
+md.pairs(mac2311merge_df)
+
+#margingplot
+marginplot(mac2311merge_df[,c("Stu_Ethnicity","GPA_HIGHSCHOOL")])
+
+#imput is mice(data[columns], howmanyimputation defalt is 5,)
+impute <- mice(mac2311merge_df[, 24:27], m=5, seed = 1234 ) # if muliple coulns data[,2:7]
+
+print(impute)
+impute$imp$GPA_HIGHSCHOOL
+
+# example
+mac2311merge_df[646,]
+
+#summary
+summary(mac2311merge_df$GPA_HIGHSCHOOL)
+
+#view
+mac2311merge_df[646,]
+
+#complete data
+
+NewDFmac2311 <- complete(impute, 3)
+
+#distribution of observaed imputed values
+stripplot(impute, pch=20,cex=1.2) # shows any impute points are out of distribution
+# imput with replaced column ~ comparable vaiable | .imp
+xyplot(impute, GPA_HIGHSCHOOL ~ Stu_InstitutionalGPA1  | .imp, pch=20, cex=1.4) # also get along with UWF GPA
+
+# merge with original data
+mdata <- select(mac2311merge_df, 1:23)
+mymac2311_B <- cbind(mdata, NewDFmac2311)### this is the completed datasest
+
