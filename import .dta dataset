@@ -1,0 +1,98 @@
+---
+title: "R Notebook_Summer project#1_COH"
+output:
+  word_document: default
+  html_notebook: default
+---
+
+```{r}
+library(dplyr)
+library(haven)
+X2014_2018 <- read_dta("C:/Users/jk99/Downloads/2014_2018.dta")
+
+library(dplyr)
+# Missing data
+misspr <- function(x) {sum(is.na(x))/length(x)*100
+}
+round(apply(X2014_2018, 2, misspr), digits = 4)
+
+```
+```{r}
+library(mice)
+newdata <- select(mydata, 1:20)
+md.pattern(newdata)
+```
+```{r}
+#select column by % of nas
+NonaData30 <- select_if(X2014_2018,round(apply(X2014_2018, 2, misspr), digits = 4) < 30)
+NonaDatazero <- select_if(X2014_2018,round(apply(X2014_2018, 2, misspr), digits = 4) < .01)
+
+```
+```{r}
+# filtering avisexam and ahcsyr2
+X2014_2018$avisexam
+
+```
+
+```{r}
+xtabs(~X2014_2018$dibev+X2014_2018$srvy_yr)
+
+```
+```{r}
+library(tidyverse)
+dibev14_15 <- X2014_2018 %>% 
+  filter(srvy_yr <= 2015, dibev == "1") 
+head(dibev14_15,20) # 7471
+
+xtabs(~dibev14_15$srvy_yr+dibev14_15$sex)
+```
+```{r}
+dibev16_18 <- X2014_2018 %>% 
+  filter(srvy_yr >= 2016, dibev1 == "1")
+head(dibev16_18, 20)
+xtabs(~dibev16_18$srvy_yr+dibev16_18$sex)
+
+```
+
+```{r}
+# filter dibeties
+
+dib14to18_df <- filter(X2014_2018, X2014_2018$dibev=="1" | X2014_2018$dibev1=="1")
+xtabs(~dib14to18_df$srvy_yr+dib14to18_df$ahcsyr2)
+```
+
+```{r}
+as_factor(dib14to18_df)
+
+```
+```{r}
+#zap_labels(dib14to18_df)
+xtabs(~dib14to18_df$srvy_yr+dib14to18_df$region)
+
+```
+
+
+
+
+
+
+```{r}
+library(lattice)
+densityplot(~dib14to18_df$wtia_hh, group=sex, data= dib14to18_df, auto.key = TRUE )
+```
+```{r}
+library(stats)
+library(tigerstats)
+barchartGC(~fint_y_p+region,data=dib14to18_df)
+```
+
+```{r}
+xyplot(wtia_hh~wtfa_hh,data=dib14to18_df,type=c("p","r")) 
+
+```
+
+```{r}
+ggplot(dib14to18_df, aes(x= racreci3, fill= notcov ))+geom_bar()
+```
+
+
