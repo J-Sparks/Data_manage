@@ -1,0 +1,69 @@
+# import data
+new_enr <- read_csv("C:/Users/jk99/Desktop/DATA 202001/STU_ENROLLMENT_SPRING20.csv") 
+
+library(stringr)
+#Fall FTIC only
+FTIC_1stTerm_enr_Fall <- new_enr %>% 
+  filter(Stu_StudentTypeCode == "B" & # for FTIC
+           Stu_LoadIPEDSFTPT=="Full Time" & # full time
+           Stu_AdmissionRecentTypeCode=="B" & # FTIC
+           Stu_DEMO_TIME_FRAME >= 200805 ) %>% # data quality since 200808
+  group_by(STU_ID) %>% 
+  mutate(ID_index = row_number()) %>% 
+  filter(ID_index== 1) %>%  # index for beginner summer and came back fall are duplicated
+  filter(str_detect(Stu_AdmissionTerm, "Fall...")) # for fall semester starters
+#check Fall FTIC2017 1018
+xtabs(~FTIC_1stTerm_enr_Fall$Stu_AdmissionTerm+   FTIC_1stTerm_enr_Fall$Stu_StudentTypeCode)
+
+#Summer FTIC only
+FTIC_1stTerm_enr_Summer <- new_enr %>% 
+  filter(Stu_StudentTypeCode == "B" &
+           Stu_LoadIPEDSFTPT=="Full Time" & Stu_AdmissionRecentTypeCode=="B" & Stu_DEMO_TIME_FRAME >= 200805 ) %>% 
+  group_by(STU_ID) %>% 
+  mutate(ID_index = row_number()) %>% 
+  filter(ID_index== 1) %>% 
+  filter(str_detect(Stu_AdmissionTerm, "Summer...")) # summer starters
+# check Summer FTIC 2017 58
+xtabs(~FTIC_1stTerm_enr_Summer$Stu_AdmissionTerm+   FTIC_1stTerm_enr_Summer$Stu_StudentTypeCode)
+
+# combine Fall and Sumer
+FTIC_All <- rbind(FTIC_1stTerm_enr_Summer,FTIC_1stTerm_enr_Fall)
+xtabs(~FTIC_All$Stu_AdmissionTerm) #FTIC 2017 = 1076
+
+
+
+library(tidyr) # for separate and unite()
+# create new column for Cohort
+FTIC_All_cohort <- separate(FTIC_All, col = Stu_AdmissionTerm, into = c("Term", "Cohort"), sep = " ")
+#write.csv(FTIC_All_cohort,"FTIC_All_cohort.csv")
+#check FTIC2017 == 1076
+xtabs(~FTIC_All_cohort$Cohort)
+xtabs(~FTIC_All_cohort$Cohort+FTIC_All_cohort$Stu_CollegeCode)
+
+# Filter for 2018 FTIC HMCSE for 1-1-1 analysis
+
+FTIC2018HMCSE <- FTIC_All_cohort %>% 
+  filter(Cohort== 2018) %>% #2018FTICHMCSE == 467
+  filter(Stu_CollegeCode == "A") %>% 
+  select(STU_ID, Stu_MajorDesc,Stu_GenderCode, Stu_Ethnicity,Stu_CountyCode,
+         Stu_GPAHighSchool,Stu_Department,
+         Stu_TotalUniversityHours) 
+colnames(FTIC2018HMCSE)[colnames(FTIC2018HMCSE) == "Stu_TotalUniversityHours"] <- "Prior_Hrs"
+
+# need import crs dataset
+new_crs <- read_csv("C:/Users/jk99/Desktop/DATA 202001/COURSE_STUDENT_INSTRUCTION_SPRING20.csv") 
+
+Fall2018MAT <- new_crs %>% 
+  filter(Course_Term == "Fall 2018") %>% #ist term for 2018 FTIC
+  filter(Course_CrsDepartmentCode == "MAT") %>% # MAT == Math department
+  select(STU_ID,Course_Term ,Course_CrsTitle, Course_CrsCombined, Course_CrsPrefix,
+         Course_CrsNumber,Course_CrsSuffix,Course_CrsGradeAwarded,Course_CrsDepartmentCode) 
+
+#Merge with 2018FTICHMCSE
+FTIC2018HMCSE_1termMATH <- merge(FTIC2018HMCSE,Fall2018MAT, by="STU_ID", all.x = TRUE ) %>% 
+                            group_by(STU_ID) %>% 
+                            arrange(Course_CrsNumber, .by_group=TRUE) %>% 
+  mutate(ID_index = row_number())
+FTIC2018HMCSE_1termMATH
+                            #filter(Course_CrsNumber == max(Course_CrsNumber))  # choose highest math courses
+
