@@ -66,3 +66,62 @@ FTIC2018HMCSE_1termMATH <- merge(FTIC2018HMCSE,Fall2018MAT, by="STU_ID", all.x =
                             arrange(Course_CrsNumber, .by_group=TRUE) %>% 
                             mutate(ID_index = row_number()) 
 summary(FTIC2018HMCSE_1termMATH)#467
+
+# need to get for DROP out index
+
+# filter FTIC2018 ID with all terms
+# get all terms from enr data by ID
+ID <- select(ID_FTIC2018HMCSE_1termMATH, "STU_ID")
+
+# terms 201808,201901,201905,201908 (201908 will use for dropout)
+UWFGPA_df <-  new_enr %>% 
+   select(STU_ID,Stu_DEMO_TIME_FRAME,Stu_TotalInstGradePoints,Stu_TotalInstHours,
+          Stu_GPATermHours,Stu_GPAGradePoints) %>% 
+   mutate(UWFGPA = Stu_TotalInstGradePoints/Stu_TotalInstHours)  %>% 
+  filter(Stu_DEMO_TIME_FRAME>=201808)
+
+# only FTIC GPA
+ID_GPA <- merge(ID, UWFGPA_df, by="STU_ID", all.x=TRUE ) %>% 
+  select(STU_ID,Stu_DEMO_TIME_FRAME, UWFGPA) %>% 
+  group_by(STU_ID) %>% 
+  arrange(Stu_DEMO_TIME_FRAME, .by_group=TRUE) %>% 
+  filter(Stu_DEMO_TIME_FRAME == max(Stu_DEMO_TIME_FRAME)) %>% # keep the last term with GPA
+  mutate(Drop1Year=ifelse(Stu_DEMO_TIME_FRAME==201908,"Retained","Dropped")) # creat Ddrop1Yesr factor
+
+# NA to zero value
+  ID_GPA[is.na(ID_GPA)] <-  0
+          
+  # Combine two ID dataset GPA and MAth
+  
+  FTIC2018HMCSEDropout_DF <- cbind(ID_GPA,ID_FTIC2018HMCSE_1termMATH )
+  
+  # To get an ist term hours and grade point
+  Term201808GPAPoint <- UWFGPA_df %>% 
+                        filter(Stu_DEMO_TIME_FRAME == 201808) %>% # ist term for FTIC2018
+                        select(STU_ID,Stu_GPATermHours,Stu_GPAGradePoints) %>%  # for ist term GPA
+                        mutate(UWFGPA1Term = Stu_GPAGradePoints/Stu_GPATermHours) # create UWFGPA1term
+  
+  # add a new column with FTIC2018HMCSEDropout_DF
+  FTIC2018HMCSEDropout_DF <- merge(FTIC2018HMCSEDropout_DF, Term201808GPAPoint, by="STU_ID", all.x = TRUE)
+  
+  # Creaning data for the modeling
+  glimpse(FTIC2018HMCSEDropout_DF)
+  
+  FTIC2018HMCSEDropout_DF_completed <- FTIC2018HMCSEDropout_DF %>% 
+                                        select(STU_ID,UWFGPA,Prior_Hrs,Stu_MajorDesc,Stu_GenderCode,Stu_Ethnicity,
+                                               Stu_CountyCode,Course_CrsCombined,Course_CrsGradeAwarded,
+                                               Stu_GPATermHours,UWFGPA1Term,Drop1Year);glimpse(FTIC2018HMCSEDropout_DF_completed)
+  # replace NA for Noattempt
+  FTIC2018HMCSEDropout_DF_completed[is.na(FTIC2018HMCSEDropout_DF_completed)] <-  "NoAttempt"
+  
+  xtabs(~FTIC2018HMCSEDropout_DF_completed$Drop1Year)
+  
+  # change colnames
+  names(FTIC2018HMCSEDropout_DF_completed) <- c("STU_ID","UWFGPA1stYear","Prior_Hours","StartMajor",
+                                                "Gender","Ethnicity","County","FirstMathCrs","FirstMathCrsGrade",
+                                                "UWFHour1stTerm","UWFGPA1stTerm","Drop1stYear");glimpse(FTIC2018HMCSEDropout_DF_completed)
+  
+  #Save the final dataset
+  write.csv(FTIC2018HMCSEDropout_DF_completed,"FTIC2018HMCSEDropout_DF_completed.csv")
+  
+
