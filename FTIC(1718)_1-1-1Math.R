@@ -128,5 +128,22 @@ write.csv(FTIC2018HMCSEDropout_DF_completed,"FTIC2018HMCSEDropout_DF_completed.c
 
 # FTIC 2017 and 18 combined
 FTIC1718HMCSEDropout_DF_Completed <- rbind(FTIC2017HMCSEDropout_DF_completed,FTIC2018HMCSEDropout_DF_completed)
+#write.csv(FTIC1718HMCSEDropout_DF_Completed,"FTIC1718HMCSEDropout_DF_Completed.csv")
 
 #now you can clean data using excel
+
+# to get an HS GPA
+#import metric4 data set
+library(readr)
+metric4anon <- read_csv("metric4anon.csv")
+ID_HSGPA <- select(metric4anon, "STU_ID", "Stu_GPAHighSchool" )
+FTIC1718HMCSEDropout_DF_Completed_HSGPA <- merge(FTIC1718HMCSEDropout_DF_Completed, ID_HSGPA,
+                                                 by = "STU_ID", all.x = TRUE)#contains 0 values
+
+FTIC1718HMCSEDropout_DF_Completed_HSGPA[is.na(FTIC1718HMCSEDropout_DF_Completed_HSGPA)] <- 0
+
+#replace 0s to NA 
+replace(FTIC1718HMCSEDropout_DF_Completed_HSGPA$Stu_GPAHighSchool, 
+        FTIC1718HMCSEDropout_DF_Completed_HSGPA$Stu_GPAHighSchool == 0, NA)
+
+write.csv(FTIC1718HMCSEDropout_DF_Completed_HSGPA,"FTIC1718HMCSEDropout_DF_Completed_HSGPA.csv")
