@@ -134,16 +134,50 @@ FTIC1718HMCSEDropout_DF_Completed <- rbind(FTIC2017HMCSEDropout_DF_completed,FTI
 
 # to get an HS GPA
 #import metric4 data set
+# to get an HS GPA
+#import metric4 data set
 library(readr)
 metric4anon <- read_csv("metric4anon.csv")
-ID_HSGPA <- select(metric4anon, "STU_ID", "Stu_GPAHighSchool" )
+M4 <- metric4anon
+#Missing HS GPA
+library(mice)
+library(VIM)
+MDFunct <- function(x){sum(is.na(x))/length(x)*100}
+apply(metric4anon, 2, MDFunct) # GPA_HIGHSCHOOL 12.2%
+#margingplot
+marginplot(M4[,c("Stu_TotalUniversityHours1","GPA_HIGHSCHOOL")])
+
+#imput is mice(data[columns], howmanyimputation defalt is 5)
+impute <- mice(M4[, c("STU_ID","Stu_TotalUniversityHours1","Stu_OverallGPA1","GPA_HIGHSCHOOL")], m=3, seed = 1234 ) # if muliple cols 
+
+print(impute)
+impute$imp$GPA_HIGHSCHOOL
+
+#complete data
+
+M44 <- complete(impute, 2) # choose 2nd impute
+
+#distribution of observaed imputed values
+stripplot(impute, pch=20,cex=1.2) # shows any impute points are out of distribution
+# imput with replaced column ~ comparable vaiable | .imp
+xyplot(impute, GPA_HIGHSCHOOL ~ Stu_OverallGPA1  | .imp, pch=20, cex=1.4) # also get along with UWF GPA
+#plot 
+md.pattern(M44)
+
+
+
+
+ID_HSGPA <- select(M44, "STU_ID", "GPA_HIGHSCHOOL" )
 FTIC1718HMCSEDropout_DF_Completed_HSGPA <- merge(FTIC1718HMCSEDropout_DF_Completed, ID_HSGPA,
                                                  by = "STU_ID", all.x = TRUE)#contains 0 values
 
-FTIC1718HMCSEDropout_DF_Completed_HSGPA[is.na(FTIC1718HMCSEDropout_DF_Completed_HSGPA)] <- 0
+#FTIC1718HMCSEDropout_DF_Completed_HSGPA[is.na(FTIC1718HMCSEDropout_DF_Completed_HSGPA)] <- 0
 
 #replace 0s to NA 
-replace(FTIC1718HMCSEDropout_DF_Completed_HSGPA$Stu_GPAHighSchool, 
-        FTIC1718HMCSEDropout_DF_Completed_HSGPA$Stu_GPAHighSchool == 0, NA)
+#replace(FTIC1718HMCSEDropout_DF_Completed_HSGPA$GPA_HIGHSCHOOL, 
+ #       FTIC1718HMCSEDropout_DF_Completed_HSGPA$GPA_HIGHSCHOOL == 0, NA)
+
+replace(FTIC1718HMCSEDropout_DF_Completed_HSGPA$UWFHour1stTerm,FTIC1718HMCSEDropout_DF_Completed_HSGPA$UWFHour1stTerm=="NoAttempt", 0)
+replace(FTIC1718HMCSEDropout_DF_Completed_HSGPA$UWFGPA1stTerm,FTIC1718HMCSEDropout_DF_Completed_HSGPA$UWFGPA1stTerm =="NoAttempt", 0)
 
 write.csv(FTIC1718HMCSEDropout_DF_Completed_HSGPA,"FTIC1718HMCSEDropout_DF_Completed_HSGPA.csv")
