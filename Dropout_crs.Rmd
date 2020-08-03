@@ -1,0 +1,185 @@
+---
+title: "R Notebook"
+output:
+  html_notebook: default
+  pdf_document: default
+---
+
+```{r}
+# Read data
+library(caret)
+library(naivebayes)
+library(readr)
+library(dplyr)
+CompletedData_crs_08022020 <- read_csv("CompletedData_crs_08022020.csv", 
+    col_types = cols(X1 = col_skip())) #desktop
+glimpse(CompletedData_crs_08022020)
+```
+```{r}
+#select original datset
+allDropout <- select(CompletedData_crs_08022020, "Prior_Hours","GPA_HIGHSCHOOL","ReStartMajor","Gender","ReEthnicity","ReCounty","ReFirstMathCrs",
+                  "FirstMathCrsGrade","UWFHour1stTerm","UWFGPA1stTerm","ENC1101","CHM2045","BSC2010","BSC2844","PSY2012",
+                  "Drop1stYear")
+```
+```{r}
+library(caret)
+# Performs stratified random split of the data set
+TrainingIndex <- createDataPartition(allDropout$Drop1stYear, p=0.8, list = FALSE)
+allDropoutTrainingSet <- allDropout[TrainingIndex,] # Training Set
+allDropoutTestingSet <- allDropout[-TrainingIndex,] # Test Set
+
+write.csv(TrainingSet, "training.csv")
+write.csv(TestingSet, "testing.csv")
+
+TrainSet <- read.csv("training.csv", header = TRUE)
+TrainSet <- TrainSet[,-1] #row number
+TrainSet <- TrainSet[,-1] # STU_ID
+```
+```{r}
+# Build model using all factors and labells
+
+library(naivebayes)
+allmodelNB <- naive_bayes(Drop1stYear ~ ., data = allDropoutTrainingSet, usekernel = TRUE)
+allmodelNB
+allmodelNB$tables
+```
+```{r}
+allmodelNB$tables
+```
+```{r}
+#accuracy 0.8438356 used kernel
+confMatRank <- table(predict(allmodelNB), allDropoutTrainingSet$Drop1stYear)
+confMatRank
+sum(diag(confMatRank)/sum(confMatRank)) # 0.8438356
+1-sum(diag(confMatRank)/sum(confMatRank)) 
+p <- predict(allmodelNB, allDropoutTrainingSet)
+pred <- predict(allmodelNB, allDropoutTrainingSet[c(1:10),], type="prob")
+pred
+n <- table(allDropoutTrainingSet$Drop1stYear)
+n
+n/sum(n)
+```
+```{r}
+
+
+
+#Usng fewer factors 
+
+#select original datset
+reallDropout <- select(CompletedData_crs_08022020, "Prior_Hours","GPA_HIGHSCHOOL","ReStartMajor","Gender","ReEthnicity","ReCounty","ReFirstMathCrs",
+                  "FirstMathCrsGrade","UWFHour1stTerm","UWFGPA1stTerm",18:27,
+                  "Drop1stYear")
+glimpse(reallDropout)
+```
+
+```{r}
+library(caret)
+# Performs stratified random split of the data set
+TrainingIndex <- createDataPartition(reallDropout$Drop1stYear, p=0.8, list = FALSE)
+TrainingSet <- reallDropout[TrainingIndex,] # Training Set
+TestingSet <- reallDropout[-TrainingIndex,] # Test Set
+
+write.csv(TrainingSet, "training.csv")
+write.csv(TestingSet, "testing.csv")
+
+TrainSet <- read.csv("training.csv", header = TRUE)
+TrainSet <- TrainSet[,-1] #row number
+TrainSet <- TrainSet[,-1] # STU_ID
+```
+
+```{r}
+# Build model using all factors and labells
+
+library(naivebayes)
+reallmodelNB <- naive_bayes(Drop1stYear ~ ., data = TrainSet, usekernel = TRUE)
+reallmodelNB
+```
+```{r}
+#accuracy 0.8438356 used kernel
+confMatRank <- table(predict(reallmodelNB), TrainSet$Drop1stYear)
+confMatRank
+sum(diag(confMatRank)/sum(confMatRank)) #0.8438356
+1-sum(diag(confMatRank)/sum(confMatRank)) 
+p <- predict(reallmodelNB, TrainSet)
+pred <- predict(reallmodelNB, TrainSet[c(1:10),], type="prob")
+pred
+n <- table(TrainSet$Drop1stYear)
+n
+n/sum(n)
+```
+
+#### get a new SD data set
+```{r}
+SetDTTESTDF08032020 <- read.csv("C:/Users/jk99/Desktop/Dropout_crs/SetDTTESTDF08032020.csv")
+glimpse(SetDTTESTDF08032020)
+```
+
+```{r}
+library(dplyr)
+CompletedData_crs_08022020 <- read_csv("CompletedData_crs_08022020.csv", 
+    col_types = cols(X1 = col_skip())) #desktop
+
+
+allDropout <- select(CompletedData_crs_08022020, "Prior_Hours","GPA_HIGHSCHOOL","ReStartMajor","Gender","ReEthnicity","ReCounty","ReFirstMathCrs",
+                  "FirstMathCrsGrade","UWFHour1stTerm","UWFGPA1stTerm","ENC1101","CHM2045","BSC2010","BSC2844","PSY2012",
+                  "Drop1stYear")
+
+
+SDCompletedCropoutAllvariables <- merge(CompletedData_crs_08022020,SetDTTESTDF08032020, by=
+                                          "STU_ID", all=T)
+## Completed data set 080320202_Jay
+write.csv(SDCompletedCropoutAllvariables,"SDCompletedCropoutAllvariables08032020JAY.csv")
+
+na.omit(SDCompletedCropoutAllvariables)
+```
+```{r}
+glimpse(SDCompletedCropoutAllvariables)
+```
+
+```{r}
+
+allvariablesSD <- select(SDCompletedCropoutAllvariables, "Prior_Hours","GPA_HIGHSCHOOL","ReStartMajor","Gender","ReEthnicity","ReCounty","ReFirstMathCrs",
+                  "FirstMathCrsGrade","UWFHour1stTerm","UWFGPA1stTerm","FirstTermCRSs","FristTermGrades","Drop1stYear")
+
+glimpse(allvariablesSD)
+
+```
+
+```{r}
+library(caret)
+TrainingIndex <- createDataPartition(allvariablesSD$Drop1stYear, p=0.8, list = FALSE)
+TrainingSet <- allvariablesSD[TrainingIndex,] # Training Set
+TestingSet <- allvariablesSD[-TrainingIndex,] # Test Set
+
+# Build model
+#model <- naive_bayes(Dropouts ~ ., data = Dropout)
+library(naivebayes)
+SD_model <- naive_bayes(Drop1stYear ~ ., data = TrainingSet, usekernel = TRUE)
+SD_model
+```
+```{r}
+SD_model$tables
+```
+```{r}
+#accuracy improved  0.9342466 used kernel
+confMatRank <- table(predict(SD_model), TrainingSet$Drop1stYear)
+confMatRank
+sum(diag(confMatRank)/sum(confMatRank)) # 0.9342466
+1-sum(diag(confMatRank)/sum(confMatRank)) 
+p <- predict(SD_model, TrainingSet)
+pred <- round(predict(SD_model, TrainingSet[c(200:210),], type="prob"), digits = 4)
+pred
+n <- table(TrainingSet$Drop1stYear)
+n
+n/sum(n)
+pred <- predict(SD_model, type="prob")
+results <-  cbind(pred, TrainingSet)
+write.csv(results,"NBC_DROPOUT_Results_93.42.csv")
+```
+
+```{r}
+# predition
+results[c(100:150),]
+
+```
+
