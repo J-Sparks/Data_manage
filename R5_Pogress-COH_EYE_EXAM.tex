@@ -1,0 +1,809 @@
+\PassOptionsToPackage{unicode=true}{hyperref} % options for packages loaded elsewhere
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provides euro and other symbols
+\else % if luatex or xelatex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage[]{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\IfFileExists{parskip.sty}{%
+\usepackage{parskip}
+}{% else
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+}
+\usepackage{hyperref}
+\hypersetup{
+            pdftitle={R5 EYE \& Exam Analysis},
+            pdfborder={0 0 0},
+            breaklinks=true}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{0}
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+% set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+
+
+\title{R5 EYE \& Exam Analysis}
+\author{}
+\date{\vspace{-2.5em}}
+
+\begin{document}
+\maketitle
+
+used data \& library
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(haven)}
+\KeywordTok{library}\NormalTok{(car)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Loading required package: carData
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(stargazer)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Please cite as:
+\end{verbatim}
+
+\begin{verbatim}
+##  Hlavac, Marek (2018). stargazer: Well-Formatted Regression and Summary Statistics Tables.
+\end{verbatim}
+
+\begin{verbatim}
+##  R package version 5.2.2. https://CRAN.R-project.org/package=stargazer
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(survey)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Loading required package: grid
+\end{verbatim}
+
+\begin{verbatim}
+## Loading required package: Matrix
+\end{verbatim}
+
+\begin{verbatim}
+## Loading required package: survival
+\end{verbatim}
+
+\begin{verbatim}
+## 
+## Attaching package: 'survey'
+\end{verbatim}
+
+\begin{verbatim}
+## The following object is masked from 'package:graphics':
+## 
+##     dotchart
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(questionr)}
+\KeywordTok{library}\NormalTok{(ggplot2)}
+\KeywordTok{library}\NormalTok{(dplyr)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Attaching package: 'dplyr'
+\end{verbatim}
+
+\begin{verbatim}
+## The following object is masked from 'package:car':
+## 
+##     recode
+\end{verbatim}
+
+\begin{verbatim}
+## The following objects are masked from 'package:stats':
+## 
+##     filter, lag
+\end{verbatim}
+
+\begin{verbatim}
+## The following objects are masked from 'package:base':
+## 
+##     intersect, setdiff, setequal, union
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{NHIS2014TO2018DiabetesNew_}\DecValTok{1}\NormalTok{_ <-}\StringTok{ }\KeywordTok{read_dta}\NormalTok{(}\StringTok{"C:/Users/jk99/Downloads/NHIS2014TO2018DiabetesNew (1).dta"}\NormalTok{)}
+\NormalTok{Seen_Doc_eye_master <-}\StringTok{ }\KeywordTok{select}\NormalTok{(NHIS2014TO2018DiabetesNew_}\DecValTok{1}\NormalTok{_, }\StringTok{"srvy_yr"}\NormalTok{,}\KeywordTok{contains}\NormalTok{(}\StringTok{"dibev"}\NormalTok{),}
+                       \StringTok{"sex"}\NormalTok{,}\StringTok{"region"}\NormalTok{,}\StringTok{"age_p"}\NormalTok{,}\StringTok{"phstat"}\NormalTok{,}\StringTok{"incgrp4"}\NormalTok{,}
+                       \StringTok{"smkstat2"}\NormalTok{,}\StringTok{"alcstat"}\NormalTok{,}\StringTok{"hypev"}\NormalTok{,}\StringTok{"hrtev"}\NormalTok{,}\StringTok{"chlev"}\NormalTok{,}\StringTok{"notcov"}\NormalTok{,}\StringTok{"ahcsyr9"}\NormalTok{,}
+                       \StringTok{"ausualpl"}\NormalTok{,}\StringTok{"aplkind"}\NormalTok{,}\StringTok{"ahcsyr2"}\NormalTok{,}\StringTok{"avisexam"}\NormalTok{,}\StringTok{"ppsu"}\NormalTok{,}\StringTok{"wtfa"}\NormalTok{,}\StringTok{"pstrat"}\NormalTok{)}
+\CommentTok{# creat a col name diavetes for 2016 and 2017 diavetes==1}
+\NormalTok{Seen_Doc_eye_master}\OperatorTok{$}\NormalTok{diabetes <-}\StringTok{ }\KeywordTok{ifelse}\NormalTok{(Seen_Doc_eye_master}\OperatorTok{$}\NormalTok{dibev1 }\OperatorTok{==}\StringTok{ }\DecValTok{1} \OperatorTok{|}\StringTok{ }\NormalTok{Seen_Doc_eye_master}\OperatorTok{$}\NormalTok{dibev}\OperatorTok{==}\DecValTok{1}\NormalTok{, }\DecValTok{1}\NormalTok{,}\DecValTok{0}\NormalTok{)}
+\NormalTok{Seen_Doc_eye_year201617 <-}\StringTok{ }\NormalTok{Seen_Doc_eye_master }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{select}\NormalTok{(}\OperatorTok{-}\DecValTok{2}\NormalTok{,}\OperatorTok{-}\DecValTok{3}\NormalTok{ ) }\OperatorTok{%>%}\StringTok{ }\CommentTok{# omitted dibev1 and dibev cols}
+\StringTok{  }\KeywordTok{filter}\NormalTok{(srvy_yr}\OperatorTok{==}\StringTok{ }\DecValTok{2016} \OperatorTok{|}\StringTok{ }\NormalTok{srvy_yr}\OperatorTok{==}\DecValTok{2017}\NormalTok{) }\CommentTok{# filter for 2016 and 2017 year}
+\CommentTok{#### select variables #########}
+\NormalTok{all_seendoc_eye <-}\StringTok{ }\KeywordTok{select}\NormalTok{(Seen_Doc_eye_year201617, }\StringTok{"srvy_yr"}\NormalTok{, }\StringTok{"sex"}\NormalTok{, }\StringTok{"region"}\NormalTok{,}\StringTok{"age_p"}\NormalTok{,   }
+                       \StringTok{"phstat"}\NormalTok{,}\StringTok{"incgrp4"}\NormalTok{,}
+                       \StringTok{"smkstat2"}\NormalTok{,}\StringTok{"alcstat"}\NormalTok{,}\StringTok{"hypev"}\NormalTok{,}\StringTok{"hrtev"}\NormalTok{,}\StringTok{"chlev"}\NormalTok{,}\StringTok{"notcov"}\NormalTok{,}\StringTok{"ahcsyr9"}\NormalTok{,}
+                       \StringTok{"ausualpl"}\NormalTok{,}\StringTok{"aplkind"}\NormalTok{,}\StringTok{"ahcsyr2"}\NormalTok{ , }\StringTok{"ppsu"}\NormalTok{, }\StringTok{"wtfa"}\NormalTok{,}\StringTok{"pstrat"}\NormalTok{,}\StringTok{"avisexam"}\NormalTok{)}
+\KeywordTok{colnames}\NormalTok{(all_seendoc_eye)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##  [1] "srvy_yr"  "sex"      "region"   "age_p"    "phstat"   "incgrp4" 
+##  [7] "smkstat2" "alcstat"  "hypev"    "hrtev"    "chlev"    "notcov"  
+## [13] "ahcsyr9"  "ausualpl" "aplkind"  "ahcsyr2"  "ppsu"     "wtfa"    
+## [19] "pstrat"   "avisexam"
+\end{verbatim}
+
+recodeing
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{###<labelled<double>[6331]>: Last time you had an eye exam (pupils dilated)}
+\NormalTok{all_seendoc_eye}\OperatorTok{$}\NormalTok{avisexam1<-}\KeywordTok{as.factor}\NormalTok{(}\KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{avisexam }\OperatorTok{<=}\DecValTok{2}\NormalTok{, }\StringTok{"Less than 12 months"}\NormalTok{,}
+                                      \KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{avisexam }\OperatorTok{==}\StringTok{ }\DecValTok{3}\NormalTok{, }\StringTok{"13-24 months"}\NormalTok{,}
+                                             \KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{avisexam }\OperatorTok{<=}\StringTok{ }\DecValTok{5}\NormalTok{,}\StringTok{"More than 2 years/Never"}\NormalTok{, }\OtherTok{NA}\NormalTok{))))}
+\NormalTok{all_seendoc_eye}\OperatorTok{$}\NormalTok{avisexam1 <-}\StringTok{ }\KeywordTok{relevel}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{avisexam1, }\DataTypeTok{ref =} \StringTok{"13-24 months"}\NormalTok{)}
+
+\CommentTok{### level 5}
+\NormalTok{all_seendoc_eye}\OperatorTok{$}\NormalTok{avisexam5<-}\KeywordTok{as.factor}\NormalTok{(}\KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{avisexam }\OperatorTok{==}\DecValTok{1}\NormalTok{ , }\StringTok{"Less than one month"}\NormalTok{,}
+                                      \KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{avisexam }\OperatorTok{==}\StringTok{ }\DecValTok{2}\NormalTok{, }\StringTok{"1-12 months"}\NormalTok{,}
+                                             \KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{avisexam }\OperatorTok{==}\StringTok{ }\DecValTok{3}\NormalTok{,}\StringTok{"13-24 months"}\NormalTok{, }\KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{avisexam }\OperatorTok{>=}\StringTok{ }\DecValTok{5}\NormalTok{, }\StringTok{"More than 2 years/Never"}\NormalTok{,}\OtherTok{NA}\NormalTok{)))))}
+\NormalTok{all_seendoc_eye}\OperatorTok{$}\NormalTok{avisexam5 <-}\StringTok{ }\KeywordTok{relevel}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{avisexam5, }\DataTypeTok{ref =} \StringTok{"13-24 months"}\NormalTok{)}
+
+\CommentTok{### for in one year or not}
+\NormalTok{all_seendoc_eye}\OperatorTok{$}\NormalTok{avisexam2<-}\KeywordTok{as.factor}\NormalTok{(}\KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{avisexam }\OperatorTok{<=}\DecValTok{2}\NormalTok{, }\StringTok{"Yes"}\NormalTok{,}
+                                      \KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{avisexam }\OperatorTok{<=}\StringTok{ }\DecValTok{5}\NormalTok{, }\StringTok{"No"}\NormalTok{, }\OtherTok{NA}\NormalTok{)))}
+\CommentTok{### for three levels}
+\NormalTok{all_seendoc_eye}\OperatorTok{$}\NormalTok{avisexam3<-}\KeywordTok{as.factor}\NormalTok{(}\KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{avisexam }\OperatorTok{<=}\DecValTok{2}\NormalTok{, }\DecValTok{1}\NormalTok{,}
+                                      \KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{avisexam }\OperatorTok{<=}\StringTok{ }\DecValTok{3}\NormalTok{,}\DecValTok{2}\NormalTok{, }\KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{avisexam}\OperatorTok{<=}\DecValTok{5}\NormalTok{,}\DecValTok{3}\NormalTok{,}\OtherTok{NA}\NormalTok{))))}
+\NormalTok{all_seendoc_eye}\OperatorTok{$}\NormalTok{avisexam3 <-}\StringTok{ }\KeywordTok{relevel}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{avisexam3, }\DataTypeTok{ref =} \DecValTok{2}\NormalTok{)}
+                                    
+
+\CommentTok{###<labelled<double>[6331]>: Ever been told you have hypertension}
+\NormalTok{all_seendoc_eye}\OperatorTok{$}\NormalTok{hypev1<-}\KeywordTok{as.factor}\NormalTok{(}\KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{hypev }\OperatorTok{==}\DecValTok{1}\NormalTok{, }\StringTok{"Yes"}\NormalTok{,}
+                                      \KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{hypev }\OperatorTok{==}\StringTok{ }\DecValTok{2}\NormalTok{, }\StringTok{"No"}\NormalTok{, }\OtherTok{NA}\NormalTok{)))}
+
+\CommentTok{###<labelled<double>[6331]>: Ever been told you had a heart condition/disease}
+\NormalTok{all_seendoc_eye}\OperatorTok{$}\NormalTok{hrtev1<-}\KeywordTok{as.factor}\NormalTok{(}\KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{hrtev }\OperatorTok{==}\DecValTok{1}\NormalTok{, }\StringTok{"Yes"}\NormalTok{,}
+                                      \KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{hrtev }\OperatorTok{==}\StringTok{ }\DecValTok{2}\NormalTok{, }\StringTok{"No"}\NormalTok{, }\OtherTok{NA}\NormalTok{)))}
+
+\CommentTok{###<labelled<double>[6331]>: Ever told you had high cholesterol}
+\NormalTok{all_seendoc_eye}\OperatorTok{$}\NormalTok{chlev1<-}\KeywordTok{as.factor}\NormalTok{(}\KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{chlev }\OperatorTok{==}\DecValTok{1}\NormalTok{, }\StringTok{"Yes"}\NormalTok{,}
+                                      \KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{chlev }\OperatorTok{==}\StringTok{ }\DecValTok{2}\NormalTok{, }\StringTok{"No"}\NormalTok{, }\OtherTok{NA}\NormalTok{)))}
+
+\CommentTok{###<labelled<double>[6331]>: Seen/talked to a general doctor, past 12 m}
+\NormalTok{all_seendoc_eye}\OperatorTok{$}\NormalTok{ahcsyr91<-}\KeywordTok{as.factor}\NormalTok{(}\KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{ahcsyr9 }\OperatorTok{==}\DecValTok{1}\NormalTok{, }\StringTok{"Yes"}\NormalTok{,}
+                                      \KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{ahcsyr9 }\OperatorTok{==}\StringTok{ }\DecValTok{2}\NormalTok{, }\StringTok{"No"}\NormalTok{, }\OtherTok{NA}\NormalTok{)))}
+
+\CommentTok{###<labelled<double>[6331]>: Place USUALLY go when sick}
+\NormalTok{all_seendoc_eye}\OperatorTok{$}\NormalTok{ausualpl1<-}\KeywordTok{as.factor}\NormalTok{(}\KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{ausualpl }\OperatorTok{<=}\DecValTok{1}\NormalTok{, }\StringTok{"Yes"}\NormalTok{,}\StringTok{"NO"}\NormalTok{))}
+
+\CommentTok{###<labelled<double>[6331]>: Place to go when sick (most often)}
+\NormalTok{all_seendoc_eye}\OperatorTok{$}\NormalTok{aplkind1<-}\KeywordTok{as.factor}\NormalTok{(}\KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{aplkind }\OperatorTok{==}\DecValTok{1}\NormalTok{, }\StringTok{"Clinic or health center"}\NormalTok{,}\KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{aplkind }\OperatorTok{==}\StringTok{ }\DecValTok{2}\NormalTok{, }\StringTok{"Doctor's office or HMO"}\NormalTok{,}\KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{aplkind}\OperatorTok{==}\DecValTok{3}\NormalTok{,}\StringTok{"Hospital emergency room"}\NormalTok{,}\KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{aplkind}\OperatorTok{==}\DecValTok{4}\NormalTok{,}\StringTok{"Hospital outpatient department"}\NormalTok{,}\KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{aplkind}\OperatorTok{==}\DecValTok{5}\NormalTok{,}\StringTok{"Some other place"}\NormalTok{, }\OtherTok{NA}\NormalTok{))))))}
+
+\CommentTok{### <labelled<double>[6331]>: Alcohol drinking status: Recode}
+\NormalTok{all_seendoc_eye}\OperatorTok{$}\NormalTok{alcstat1<-}\KeywordTok{as.factor}\NormalTok{(}\KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{alcstat }\OperatorTok{==}\StringTok{ }\DecValTok{1}\NormalTok{, }\StringTok{"No"}\NormalTok{,}
+                                      \KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{alcstat }\OperatorTok{>=}\StringTok{ }\DecValTok{2}\NormalTok{, }\StringTok{"Yes"}\NormalTok{,}\OtherTok{NA}\NormalTok{)))}
+
+
+\CommentTok{###<labelled<double>[6331]>: Cov stat as used in Health United States}
+\NormalTok{all_seendoc_eye}\OperatorTok{$}\NormalTok{notcov1<-}\KeywordTok{as.factor}\NormalTok{(}\KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{notcov }\OperatorTok{==}\DecValTok{1}\NormalTok{, }\StringTok{"Not covered"}\NormalTok{,}
+                                      \KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{notcov }\OperatorTok{==}\StringTok{ }\DecValTok{2}\NormalTok{, }\StringTok{"Covered"}\NormalTok{, }\OtherTok{NA}\NormalTok{)))}
+
+
+
+\CommentTok{###<labelled<double>[6331]>: Smoking Status: Recode}
+\NormalTok{all_seendoc_eye}\OperatorTok{$}\NormalTok{smkstat21<-}\KeywordTok{as.factor}\NormalTok{(}\KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{smkstat2 }\OperatorTok{==}\DecValTok{1}\NormalTok{, }\StringTok{"Current every day smoker"}\NormalTok{,}
+                                      \KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{smkstat2 }\OperatorTok{==}\StringTok{ }\DecValTok{2}\NormalTok{, }\StringTok{"Current some day smoker"}\NormalTok{,}
+                                             \KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{smkstat2 }\OperatorTok{==}\StringTok{ }\DecValTok{3}\NormalTok{,}\StringTok{"Former smoker"}\NormalTok{, }\StringTok{"Never smoker"}\NormalTok{))))}
+\NormalTok{all_seendoc_eye}\OperatorTok{$}\NormalTok{smkstat21<-}\KeywordTok{relevel}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{smkstat21, }\DataTypeTok{ref=}\StringTok{'Never smoker'}\NormalTok{)}
+\CommentTok{## recode for smkstat2}
+\CommentTok{###<labelled<double>[6331]>: Smoking Status: Recode}
+\NormalTok{all_seendoc_eye}\OperatorTok{$}\NormalTok{smkstat22<-}\KeywordTok{as.factor}\NormalTok{(}\KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{smkstat2 }\OperatorTok{<=}\DecValTok{3}\NormalTok{, }\StringTok{"Yes"}\NormalTok{,}
+                                      \KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{smkstat2 }\OperatorTok{<=}\StringTok{ }\DecValTok{4}\NormalTok{, }\StringTok{"No"}\NormalTok{, }\OtherTok{NA}\NormalTok{)))}
+\NormalTok{all_seendoc_eye}\OperatorTok{$}\NormalTok{smkstat22<-}\KeywordTok{relevel}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{smkstat22, }\DataTypeTok{ref=}\StringTok{'No'}\NormalTok{)}
+
+
+
+
+\CommentTok{###<labelled<double>[6331]>: Total combined family income (grouped)}
+
+\NormalTok{all_seendoc_eye}\OperatorTok{$}\NormalTok{incgrp41<-}\KeywordTok{as.factor}\NormalTok{(}\KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{incgrp4 }\OperatorTok{==}\DecValTok{1}\NormalTok{, }\StringTok{"Under$34,999"}\NormalTok{,}
+                                      \KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{incgrp4 }\OperatorTok{==}\StringTok{ }\DecValTok{2}\NormalTok{, }\StringTok{"$35,000 - $49,999"}\NormalTok{,}
+                                             \KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{incgrp4 }\OperatorTok{==}\StringTok{ }\DecValTok{3}\NormalTok{,}\StringTok{"$50,000 - $74,999"}\NormalTok{,}
+                                                    \KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{incgrp4}\OperatorTok{==}\DecValTok{4}\NormalTok{,}\StringTok{"$75,000 - $99,999"}\NormalTok{, }\KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{incgrp4}\OperatorTok{==}\DecValTok{5}\NormalTok{,}\StringTok{"$100,000 and over"}\NormalTok{,}\OtherTok{NA}\NormalTok{))))))}
+\NormalTok{all_seendoc_eye}\OperatorTok{$}\NormalTok{incgrp41 <-}\StringTok{ }\KeywordTok{relevel}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{incgrp41, }\DataTypeTok{ref =} \StringTok{"Under$34,999"}\NormalTok{)}
+
+\CommentTok{###<labelled<double>[6331]>: Sex}
+\NormalTok{all_seendoc_eye}\OperatorTok{$}\NormalTok{male<-}\KeywordTok{as.factor}\NormalTok{(}\KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{sex }\OperatorTok{==}\DecValTok{1}\NormalTok{, }\StringTok{"Male"}\NormalTok{, }\StringTok{"Female"}\NormalTok{))}
+
+\CommentTok{###<labelled<double>[6331]>: Region}
+\NormalTok{all_seendoc_eye}\OperatorTok{$}\NormalTok{region1<-}\KeywordTok{as.factor}\NormalTok{(}\KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{region }\OperatorTok{==}\DecValTok{1}\NormalTok{, }\StringTok{"Northeast"}\NormalTok{,}
+                                      \KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{region }\OperatorTok{==}\StringTok{ }\DecValTok{2}\NormalTok{, }\StringTok{"Midwest"}\NormalTok{,}
+                                             \KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{region }\OperatorTok{==}\StringTok{ }\DecValTok{3}\NormalTok{,}\StringTok{"South"}\NormalTok{, }\StringTok{"West"}\NormalTok{))))}
+\NormalTok{all_seendoc_eye}\OperatorTok{$}\NormalTok{region1 <-}\StringTok{ }\KeywordTok{relevel}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{region1, }\DataTypeTok{ref=}\StringTok{"Northeast"}\NormalTok{)}
+
+\CommentTok{###<labelled<double>[6331]>: Age}
+\CommentTok{#AGE_P Age of persons; values are 18-85 (85 includes age 85 and older)}
+\NormalTok{all_seendoc_eye}\OperatorTok{$}\NormalTok{age_p1<-}\StringTok{ }\KeywordTok{cut}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{age_p, }\DataTypeTok{breaks =}\KeywordTok{c}\NormalTok{(}\DecValTok{18}\NormalTok{,}\DecValTok{40}\NormalTok{,}\DecValTok{50}\NormalTok{,}\DecValTok{65}\NormalTok{,}\DecValTok{85}\NormalTok{)) }\CommentTok{# created NA}
+\CommentTok{###}
+\NormalTok{all_seendoc_eye}\OperatorTok{$}\NormalTok{seendoc<-}\KeywordTok{as.factor}\NormalTok{(}\KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{ahcsyr2 }\OperatorTok{==}\DecValTok{1}\NormalTok{, }\StringTok{"Yes"}\NormalTok{, }\StringTok{"No"}\NormalTok{))}
+
+\CommentTok{###<labelled<double>[6331]>: Seen/talked to eye doctor, past 12 m}
+\NormalTok{all_seendoc_eye}\OperatorTok{$}\NormalTok{phstat1 <-}\KeywordTok{as.factor}\NormalTok{(}\KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{phstat }\OperatorTok{==}\DecValTok{1} \OperatorTok{|}\StringTok{ }\NormalTok{all_seendoc_eye}\OperatorTok{$}\NormalTok{phstat }\OperatorTok{==}\DecValTok{2}\NormalTok{, }\StringTok{"Excellent"}\NormalTok{,}
+                                      \KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{phstat }\OperatorTok{==}\StringTok{ }\DecValTok{3}\NormalTok{, }\StringTok{"Good"}\NormalTok{,}
+                                             \KeywordTok{ifelse}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{phstat }\OperatorTok{==}\StringTok{ }\DecValTok{4} \OperatorTok{|}\StringTok{ }\NormalTok{all_seendoc_eye}\OperatorTok{$}\NormalTok{phstat }\OperatorTok{==}\StringTok{ }\DecValTok{5}\NormalTok{,}\StringTok{"fair/Poor"}\NormalTok{, }\OtherTok{NA}\NormalTok{))))}
+\CommentTok{###<labelled<double>[6331]>: Reported health status}
+\NormalTok{all_seendoc_eye}\OperatorTok{$}\NormalTok{phstat1 <-}\StringTok{ }\KeywordTok{relevel}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{phstat1, }\DataTypeTok{ref =} \StringTok{"fair/Poor"}\NormalTok{)}
+\CommentTok{### weights for 2016 and 2017}
+\NormalTok{all_seendoc_eye}\OperatorTok{$}\NormalTok{wtfa1 <-}\StringTok{ }\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{wtfa)}\OperatorTok{/}\DecValTok{2}
+\CommentTok{# survy year}
+\NormalTok{all_seendoc_eye}\OperatorTok{$}\NormalTok{srvy_yr <-}\StringTok{ }\KeywordTok{as.factor}\NormalTok{(all_seendoc_eye}\OperatorTok{$}\NormalTok{srvy_yr)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# Completed data SET $ descriptive STAT}
+\NormalTok{sub <-all_seendoc_eye }\OperatorTok{%>%}
+\StringTok{  }\KeywordTok{select}\NormalTok{(ppsu,pstrat,wtfa1,srvy_yr, male, region1,age_p1, phstat1,incgrp41, smkstat21,smkstat22,notcov1,hypev1,hrtev1,chlev1,ahcsyr91,ausualpl1,aplkind1,alcstat1,seendoc,avisexam1,avisexam2,avisexam3) }\OperatorTok{%>%}
+\StringTok{    }\KeywordTok{filter}\NormalTok{( }\KeywordTok{complete.cases}\NormalTok{(.))}
+\KeywordTok{summary}\NormalTok{(sub)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##       ppsu            pstrat          wtfa1        srvy_yr         male     
+##  Min.   :  1.00   Min.   :100.0   Min.   : 215.5   2016:2955   Female:2733  
+##  1st Qu.:  8.00   1st Qu.:110.0   1st Qu.:1185.0   2017:2377   Male  :2599  
+##  Median : 24.00   Median :124.0   Median :1657.0                            
+##  Mean   : 31.86   Mean   :124.8   Mean   :1713.3                            
+##  3rd Qu.: 48.00   3rd Qu.:138.0   3rd Qu.:2122.5                            
+##  Max.   :155.00   Max.   :151.0   Max.   :7227.5                            
+##       region1         age_p1          phstat1                  incgrp41   
+##  Northeast: 844   (18,40]: 375   fair/Poor:2054   Under$34,999     :2545  
+##  Midwest  :1234   (40,50]: 538   Excellent:1269   $100,000 and over: 739  
+##  South    :2122   (50,65]:1977   Good     :2009   $35,000 - $49,999: 695  
+##  West     :1132   (65,85]:2442                    $50,000 - $74,999: 842  
+##                                                   $75,000 - $99,999: 511  
+##                                                                           
+##                     smkstat21    smkstat22         notcov1     hypev1    
+##  Never smoker            :2716   No :2716   Covered    :5110   No :1343  
+##  Current every day smoker: 643   Yes:2616   Not covered: 222   Yes:3989  
+##  Current some day smoker : 153                                           
+##  Former smoker           :1820                                           
+##                                                                          
+##                                                                          
+##  hrtev1     chlev1     ahcsyr91   ausualpl1 
+##  No :4358   No :1724   No : 549   NO :  56  
+##  Yes: 974   Yes:3608   Yes:4783   Yes:5276  
+##                                             
+##                                             
+##                                             
+##                                             
+##                            aplkind1    alcstat1   seendoc   
+##  Clinic or health center       :1346   No :1141   No :1887  
+##  Doctor's office or HMO        :3816   Yes:4191   Yes:3445  
+##  Hospital emergency room       :  37                        
+##  Hospital outpatient department:  98                        
+##  Some other place              :  35                        
+##                                                             
+##                    avisexam1    avisexam2  avisexam3
+##  13-24 months           : 739   No :1676   2: 739   
+##  Less than 12 months    :3656   Yes:3656   1:3656   
+##  More than 2 years/Never: 937              3: 937   
+##                                                     
+##                                                     
+## 
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{#First we tell R our survey design}
+
+\KeywordTok{options}\NormalTok{(}\DataTypeTok{survey.lonely.psu =} \StringTok{"adjust"}\NormalTok{)}
+\NormalTok{eye_nhis_design <-}\KeywordTok{svydesign}\NormalTok{(}\DataTypeTok{ids=}\OperatorTok{~}\NormalTok{ppsu, }\DataTypeTok{strata=}\OperatorTok{~}\NormalTok{pstrat, }\DataTypeTok{weights=}\OperatorTok{~}\NormalTok{wtfa1, }\DataTypeTok{data =}\NormalTok{sub , }\DataTypeTok{nest =} \OtherTok{TRUE}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+Seen doc svyglm \& Odd Ratios \& CI by all variables
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{#Full Logit model}
+\NormalTok{fit.logit0all<-}\KeywordTok{svyglm}\NormalTok{(seendoc }\OperatorTok{~}\StringTok{ }\NormalTok{male }\OperatorTok{+}\StringTok{ }\NormalTok{age_p1 }\OperatorTok{+}\StringTok{ }\NormalTok{phstat1 }\OperatorTok{+}\StringTok{ }\NormalTok{region1}\OperatorTok{+}\NormalTok{incgrp41}\OperatorTok{+}\NormalTok{smkstat22}\OperatorTok{+}\NormalTok{notcov1}\OperatorTok{+}\NormalTok{hypev1}\OperatorTok{+}\NormalTok{hrtev1}\OperatorTok{+}\NormalTok{chlev1}\OperatorTok{+}\NormalTok{ahcsyr91}\OperatorTok{+}\NormalTok{ausualpl1}\OperatorTok{+}\NormalTok{aplkind1}\OperatorTok{+}\NormalTok{alcstat1,}
+                  \DataTypeTok{design=}\NormalTok{ eye_nhis_design,}
+                  \DataTypeTok{family=}\StringTok{"binomial"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning in eval(family$initialize): non-integer #successes in a binomial glm!
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{summary}\NormalTok{(fit.logit0all);}\KeywordTok{exp}\NormalTok{(}\KeywordTok{coef}\NormalTok{(fit.logit0all));}\KeywordTok{round}\NormalTok{(}\KeywordTok{confint}\NormalTok{(fit.logit0all),}\DecValTok{4}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## svyglm(formula = seendoc ~ male + age_p1 + phstat1 + region1 + 
+##     incgrp41 + smkstat22 + notcov1 + hypev1 + hrtev1 + chlev1 + 
+##     ahcsyr91 + ausualpl1 + aplkind1 + alcstat1, design = eye_nhis_design, 
+##     family = "binomial")
+## 
+## Survey design:
+## svydesign(ids = ~ppsu, strata = ~pstrat, weights = ~wtfa1, data = sub, 
+##     nest = TRUE)
+## 
+## Coefficients:
+##                                         Estimate Std. Error t value Pr(>|t|)
+## (Intercept)                            -0.623293   0.400014  -1.558 0.119742
+## maleMale                               -0.084154   0.069123  -1.217 0.223933
+## age_p1(40,50]                           0.146587   0.148131   0.990 0.322796
+## age_p1(50,65]                           0.353395   0.128056   2.760 0.005970
+## age_p1(65,85]                           0.824237   0.134432   6.131 1.62e-09
+## phstat1Excellent                        0.067063   0.090507   0.741 0.459017
+## phstat1Good                             0.147621   0.079506   1.857 0.063860
+## region1Midwest                         -0.250330   0.100692  -2.486 0.013198
+## region1South                           -0.261045   0.090266  -2.892 0.003974
+## region1West                            -0.333526   0.110363  -3.022 0.002622
+## incgrp41$100,000 and over               0.623684   0.114559   5.444 7.72e-08
+## incgrp41$35,000 - $49,999               0.190639   0.104984   1.816 0.069910
+## incgrp41$50,000 - $74,999               0.335505   0.098405   3.409 0.000697
+## incgrp41$75,000 - $99,999               0.551397   0.125584   4.391 1.35e-05
+## smkstat22Yes                           -0.046880   0.069510  -0.674 0.500310
+## notcov1Not covered                     -0.600427   0.175576  -3.420 0.000671
+## hypev1Yes                               0.047083   0.083338   0.565 0.572322
+## hrtev1Yes                               0.281508   0.093213   3.020 0.002640
+## chlev1Yes                               0.157256   0.074293   2.117 0.034716
+## ahcsyr91Yes                             0.763589   0.112407   6.793 2.75e-11
+## ausualpl1Yes                           -0.257116   0.348137  -0.739 0.460484
+## aplkind1Doctor's office or HMO          0.020841   0.076817   0.271 0.786248
+## aplkind1Hospital emergency room         0.225312   0.392804   0.574 0.566464
+## aplkind1Hospital outpatient department  0.169389   0.271004   0.625 0.532192
+## aplkind1Some other place               -0.007517   0.398175  -0.019 0.984944
+## alcstat1Yes                             0.154882   0.085169   1.819 0.069506
+##                                           
+## (Intercept)                               
+## maleMale                                  
+## age_p1(40,50]                             
+## age_p1(50,65]                          ** 
+## age_p1(65,85]                          ***
+## phstat1Excellent                          
+## phstat1Good                            .  
+## region1Midwest                         *  
+## region1South                           ** 
+## region1West                            ** 
+## incgrp41$100,000 and over              ***
+## incgrp41$35,000 - $49,999              .  
+## incgrp41$50,000 - $74,999              ***
+## incgrp41$75,000 - $99,999              ***
+## smkstat22Yes                              
+## notcov1Not covered                     ***
+## hypev1Yes                                 
+## hrtev1Yes                              ** 
+## chlev1Yes                              *  
+## ahcsyr91Yes                            ***
+## ausualpl1Yes                              
+## aplkind1Doctor's office or HMO            
+## aplkind1Hospital emergency room           
+## aplkind1Hospital outpatient department    
+## aplkind1Some other place                  
+## alcstat1Yes                            .  
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## (Dispersion parameter for binomial family taken to be 1.001126)
+## 
+## Number of Fisher Scoring iterations: 4
+\end{verbatim}
+
+\begin{verbatim}
+##                            (Intercept)                               maleMale 
+##                              0.5361761                              0.9192899 
+##                          age_p1(40,50]                          age_p1(50,65] 
+##                              1.1578762                              1.4238939 
+##                          age_p1(65,85]                       phstat1Excellent 
+##                              2.2801406                              1.0693628 
+##                            phstat1Good                         region1Midwest 
+##                              1.1590738                              0.7785442 
+##                           region1South                            region1West 
+##                              0.7702460                              0.7163930 
+##              incgrp41$100,000 and over              incgrp41$35,000 - $49,999 
+##                              1.8657896                              1.2100226 
+##              incgrp41$50,000 - $74,999              incgrp41$75,000 - $99,999 
+##                              1.3986468                              1.7356755 
+##                           smkstat22Yes                     notcov1Not covered 
+##                              0.9542022                              0.5485771 
+##                              hypev1Yes                              hrtev1Yes 
+##                              1.0482088                              1.3251268 
+##                              chlev1Yes                            ahcsyr91Yes 
+##                              1.1702950                              2.1459650 
+##                           ausualpl1Yes         aplkind1Doctor's office or HMO 
+##                              0.7732787                              1.0210601 
+##        aplkind1Hospital emergency room aplkind1Hospital outpatient department 
+##                              1.2527133                              1.1845806 
+##               aplkind1Some other place                            alcstat1Yes 
+##                              0.9925107                              1.1675199
+\end{verbatim}
+
+\begin{verbatim}
+##                                          2.5 %  97.5 %
+## (Intercept)                            -1.4073  0.1607
+## maleMale                               -0.2196  0.0513
+## age_p1(40,50]                          -0.1437  0.4369
+## age_p1(50,65]                           0.1024  0.6044
+## age_p1(65,85]                           0.5608  1.0877
+## phstat1Excellent                       -0.1103  0.2445
+## phstat1Good                            -0.0082  0.3034
+## region1Midwest                         -0.4477 -0.0530
+## region1South                           -0.4380 -0.0841
+## region1West                            -0.5498 -0.1172
+## incgrp41$100,000 and over               0.3992  0.8482
+## incgrp41$35,000 - $49,999              -0.0151  0.3964
+## incgrp41$50,000 - $74,999               0.1426  0.5284
+## incgrp41$75,000 - $99,999               0.3053  0.7975
+## smkstat22Yes                           -0.1831  0.0894
+## notcov1Not covered                     -0.9445 -0.2563
+## hypev1Yes                              -0.1163  0.2104
+## hrtev1Yes                               0.0988  0.4642
+## chlev1Yes                               0.0116  0.3029
+## ahcsyr91Yes                             0.5433  0.9839
+## ausualpl1Yes                           -0.9395  0.4252
+## aplkind1Doctor's office or HMO         -0.1297  0.1714
+## aplkind1Hospital emergency room        -0.5446  0.9952
+## aplkind1Hospital outpatient department -0.3618  0.7005
+## aplkind1Some other place               -0.7879  0.7729
+## alcstat1Yes                            -0.0120  0.3218
+\end{verbatim}
+
+Multinomial Model
+
+Full Model all variables
+
+\hypertarget{new-approach}{%
+\paragraph{New approach}\label{new-approach}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{## Multinomial Regression Analysis #1}
+\KeywordTok{library}\NormalTok{(nnet)}
+\KeywordTok{library}\NormalTok{(VGAM)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Loading required package: stats4
+\end{verbatim}
+
+\begin{verbatim}
+## Loading required package: splines
+\end{verbatim}
+
+\begin{verbatim}
+## 
+## Attaching package: 'VGAM'
+\end{verbatim}
+
+\begin{verbatim}
+## The following object is masked from 'package:survey':
+## 
+##     calibrate
+\end{verbatim}
+
+\begin{verbatim}
+## The following object is masked from 'package:car':
+## 
+##     logit
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{newmfit<-}\KeywordTok{vglm}\NormalTok{(avisexam3}\OperatorTok{~}\StringTok{ }\NormalTok{age_p1  }\OperatorTok{+}\StringTok{ }\NormalTok{region1}\OperatorTok{+}\NormalTok{incgrp41}\OperatorTok{+}\NormalTok{notcov1}\OperatorTok{+}\NormalTok{hrtev1}\OperatorTok{+}\NormalTok{chlev1}\OperatorTok{+}\NormalTok{ahcsyr91,}
+           \KeywordTok{multinomial}\NormalTok{(}\DataTypeTok{refLevel =} \DecValTok{2}\NormalTok{),sub,}
+           \DataTypeTok{weights=}\NormalTok{wtfa1}\OperatorTok{/}\KeywordTok{mean}\NormalTok{(wtfa1, }\DataTypeTok{na.rm=}\NormalTok{T))}
+
+\KeywordTok{summary}\NormalTok{(newmfit)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## vglm(formula = avisexam3 ~ age_p1 + region1 + incgrp41 + notcov1 + 
+##     hrtev1 + chlev1 + ahcsyr91, family = multinomial(refLevel = 2), 
+##     data = sub, weights = wtfa1/mean(wtfa1, na.rm = T))
+## 
+## Pearson residuals:
+##                      Min      1Q  Median      3Q   Max
+## log(mu[,1]/mu[,2]) -1.50 -0.4608 -0.3506 -0.1903 4.763
+## log(mu[,3]/mu[,2]) -1.98 -0.5017 -0.3562 -0.1901 5.776
+## 
+## Coefficients: 
+##                             Estimate Std. Error z value Pr(>|z|)    
+## (Intercept):1               -1.01680    0.20639  -4.927 8.37e-07 ***
+## (Intercept):2               -0.08050    0.17397  -0.463 0.643547    
+## age_p1(40,50]:1              0.02666    0.18859   0.141 0.887598    
+## age_p1(40,50]:2             -0.32798    0.15152  -2.164 0.030426 *  
+## age_p1(50,65]:1             -0.24287    0.16396  -1.481 0.138525    
+## age_p1(50,65]:2             -0.65840    0.12801  -5.143 2.70e-07 ***
+## age_p1(65,85]:1             -0.54956    0.16610  -3.309 0.000938 ***
+## age_p1(65,85]:2             -1.21455    0.13256  -9.162  < 2e-16 ***
+## region1Midwest:1             0.04588    0.13137   0.349 0.726916    
+## region1Midwest:2             0.17365    0.12548   1.384 0.166402    
+## region1South:1               0.11780    0.11907   0.989 0.322478    
+## region1South:2               0.29643    0.11408   2.598 0.009367 ** 
+## region1West:1                0.06419    0.13585   0.473 0.636559    
+## region1West:2                0.28461    0.12783   2.227 0.025980 *  
+## incgrp41$100,000 and over:1 -0.18947    0.12276  -1.543 0.122725    
+## incgrp41$100,000 and over:2 -0.81714    0.12715  -6.427 1.31e-10 ***
+## incgrp41$35,000 - $49,999:1 -0.24619    0.13589  -1.812 0.070033 .  
+## incgrp41$35,000 - $49,999:2 -0.13324    0.11363  -1.173 0.240975    
+## incgrp41$50,000 - $74,999:1 -0.17660    0.12079  -1.462 0.143729    
+## incgrp41$50,000 - $74,999:2 -0.37248    0.11011  -3.383 0.000718 ***
+## incgrp41$75,000 - $99,999:1 -0.23090    0.14453  -1.598 0.110119    
+## incgrp41$75,000 - $99,999:2 -0.86229    0.15391  -5.602 2.11e-08 ***
+## notcov1Not covered:1         0.52686    0.19535   2.697 0.006996 ** 
+## notcov1Not covered:2         0.83729    0.15728   5.324 1.02e-07 ***
+## hrtev1Yes:1                 -0.04854    0.10862  -0.447 0.654974    
+## hrtev1Yes:2                 -0.36765    0.11058  -3.325 0.000885 ***
+## chlev1Yes:1                  0.27449    0.09226   2.975 0.002929 ** 
+## chlev1Yes:2                 -0.14914    0.07948  -1.876 0.060613 .  
+## ahcsyr91Yes:1               -0.47615    0.12376  -3.847 0.000119 ***
+## ahcsyr91Yes:2               -0.38384    0.11315  -3.392 0.000693 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Names of linear predictors: log(mu[,1]/mu[,2]), log(mu[,3]/mu[,2])
+## 
+## Residual deviance: 8652.365 on 10634 degrees of freedom
+## 
+## Log-likelihood: -4326.182 on 10634 degrees of freedom
+## 
+## Number of Fisher scoring iterations: 4 
+## 
+## No Hauck-Donner effect found in any of the estimates
+## 
+## 
+## Reference group is level  2  of the response
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{round}\NormalTok{(}\KeywordTok{exp}\NormalTok{(}\KeywordTok{coef}\NormalTok{(newmfit)), }\DecValTok{4}\NormalTok{) }\CommentTok{# odd ratios}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##               (Intercept):1               (Intercept):2 
+##                      0.3618                      0.9227 
+##             age_p1(40,50]:1             age_p1(40,50]:2 
+##                      1.0270                      0.7204 
+##             age_p1(50,65]:1             age_p1(50,65]:2 
+##                      0.7844                      0.5177 
+##             age_p1(65,85]:1             age_p1(65,85]:2 
+##                      0.5772                      0.2968 
+##            region1Midwest:1            region1Midwest:2 
+##                      1.0469                      1.1896 
+##              region1South:1              region1South:2 
+##                      1.1250                      1.3450 
+##               region1West:1               region1West:2 
+##                      1.0663                      1.3292 
+## incgrp41$100,000 and over:1 incgrp41$100,000 and over:2 
+##                      0.8274                      0.4417 
+## incgrp41$35,000 - $49,999:1 incgrp41$35,000 - $49,999:2 
+##                      0.7818                      0.8753 
+## incgrp41$50,000 - $74,999:1 incgrp41$50,000 - $74,999:2 
+##                      0.8381                      0.6890 
+## incgrp41$75,000 - $99,999:1 incgrp41$75,000 - $99,999:2 
+##                      0.7938                      0.4222 
+##        notcov1Not covered:1        notcov1Not covered:2 
+##                      1.6936                      2.3101 
+##                 hrtev1Yes:1                 hrtev1Yes:2 
+##                      0.9526                      0.6924 
+##                 chlev1Yes:1                 chlev1Yes:2 
+##                      1.3159                      0.8615 
+##               ahcsyr91Yes:1               ahcsyr91Yes:2 
+##                      0.6212                      0.6812
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{round}\NormalTok{(}\KeywordTok{exp}\NormalTok{(}\KeywordTok{confint}\NormalTok{(newmfit)), }\DecValTok{4}\NormalTok{) }\CommentTok{# CI}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##                              2.5 % 97.5 %
+## (Intercept):1               0.2414 0.5421
+## (Intercept):2               0.6561 1.2975
+## age_p1(40,50]:1             0.7097 1.4863
+## age_p1(40,50]:2             0.5353 0.9695
+## age_p1(50,65]:1             0.5688 1.0816
+## age_p1(50,65]:2             0.4028 0.6653
+## age_p1(65,85]:1             0.4168 0.7993
+## age_p1(65,85]:2             0.2289 0.3849
+## region1Midwest:1            0.8093 1.3544
+## region1Midwest:2            0.9303 1.5214
+## region1South:1              0.8909 1.4207
+## region1South:2              1.0755 1.6821
+## region1West:1               0.8170 1.3916
+## region1West:2               1.0347 1.7077
+## incgrp41$100,000 and over:1 0.6505 1.0525
+## incgrp41$100,000 and over:2 0.3443 0.5667
+## incgrp41$35,000 - $49,999:1 0.5990 1.0204
+## incgrp41$35,000 - $49,999:2 0.7005 1.0936
+## incgrp41$50,000 - $74,999:1 0.6614 1.0620
+## incgrp41$50,000 - $74,999:2 0.5553 0.8550
+## incgrp41$75,000 - $99,999:1 0.5980 1.0538
+## incgrp41$75,000 - $99,999:2 0.3122 0.5709
+## notcov1Not covered:1        1.1549 2.4837
+## notcov1Not covered:2        1.6973 3.1442
+## hrtev1Yes:1                 0.7699 1.1786
+## hrtev1Yes:2                 0.5574 0.8599
+## chlev1Yes:1                 1.0982 1.5767
+## chlev1Yes:2                 0.7372 1.0067
+## ahcsyr91Yes:1               0.4874 0.7917
+## ahcsyr91Yes:2               0.5457 0.8504
+\end{verbatim}
+
+\hypertarget{prediction}{%
+\subsubsection{Prediction}\label{prediction}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{#Prediction}
+\NormalTok{p <-}\StringTok{ }\KeywordTok{predict}\NormalTok{(newmfit, }\DataTypeTok{type=}\StringTok{"resp"}\NormalTok{)}
+\NormalTok{results <-}\StringTok{ }\KeywordTok{cbind}\NormalTok{(sub, p)}
+\NormalTok{results[}\DecValTok{1}\OperatorTok{:}\DecValTok{10}\NormalTok{,]}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##    ppsu pstrat  wtfa1 srvy_yr   male   region1  age_p1   phstat1
+## 1    35    107 1132.0    2016   Male   Midwest (40,50]      Good
+## 2     4    138 1308.5    2016 Female      West (50,65]      Good
+## 3     6    121 1487.0    2016 Female     South (65,85]      Good
+## 4     1    144 1567.5    2016   Male     South (50,65] fair/Poor
+## 5     9    129 2027.5    2016 Female      West (65,85] fair/Poor
+## 6    48    121 2208.5    2016   Male     South (50,65] Excellent
+## 7     3    119 2010.0    2016 Female      West (65,85]      Good
+## 8   140    100 1114.5    2016 Female      West (18,40] fair/Poor
+## 9     2    133 1734.0    2016   Male   Midwest (50,65] fair/Poor
+## 10   54    140  482.0    2016 Female Northeast (65,85]      Good
+##             incgrp41                smkstat21 smkstat22 notcov1 hypev1 hrtev1
+## 1  $75,000 - $99,999            Former smoker       Yes Covered     No     No
+## 2  $35,000 - $49,999             Never smoker        No Covered    Yes     No
+## 3       Under$34,999             Never smoker        No Covered    Yes     No
+## 4       Under$34,999 Current every day smoker       Yes Covered    Yes     No
+## 5       Under$34,999             Never smoker        No Covered    Yes     No
+## 6  $75,000 - $99,999            Former smoker       Yes Covered     No     No
+## 7       Under$34,999             Never smoker        No Covered    Yes     No
+## 8  $50,000 - $74,999             Never smoker        No Covered    Yes     No
+## 9  $75,000 - $99,999            Former smoker       Yes Covered    Yes     No
+## 10      Under$34,999            Former smoker       Yes Covered    Yes     No
+##    chlev1 ahcsyr91 ausualpl1                aplkind1 alcstat1 seendoc
+## 1      No      Yes       Yes Clinic or health center      Yes     Yes
+## 2     Yes       No       Yes  Doctor's office or HMO       No     Yes
+## 3     Yes      Yes       Yes  Doctor's office or HMO       No     Yes
+## 4     Yes      Yes       Yes Clinic or health center      Yes      No
+## 5     Yes      Yes       Yes  Doctor's office or HMO       No     Yes
+## 6     Yes      Yes       Yes  Doctor's office or HMO      Yes     Yes
+## 7     Yes      Yes       Yes  Doctor's office or HMO      Yes     Yes
+## 8     Yes      Yes       Yes  Doctor's office or HMO      Yes     Yes
+## 9     Yes      Yes       Yes  Doctor's office or HMO      Yes      No
+## 10    Yes      Yes       Yes  Doctor's office or HMO      Yes      No
+##                  avisexam1 avisexam2 avisexam3         2         1         3
+## 1      Less than 12 months       Yes         1 0.1351433 0.7046137 0.1602430
+## 2      Less than 12 months       Yes         1 0.1738849 0.5586770 0.2674381
+## 3      Less than 12 months       Yes         1 0.1363515 0.7101269 0.1535217
+## 4  More than 2 years/Never        No         3 0.1592998 0.6105220 0.2301783
+## 5      Less than 12 months       Yes         1 0.1303971 0.7165199 0.1530830
+## 6      Less than 12 months       Yes         1 0.1515959 0.7319031 0.1165010
+## 7      Less than 12 months       Yes         1 0.1303971 0.7165199 0.1530830
+## 8      Less than 12 months       Yes         1 0.1501280 0.5681293 0.2817427
+## 9      Less than 12 months       Yes         1 0.1445416 0.7498861 0.1055723
+## 10            13-24 months        No         2 0.1281898 0.7510881 0.1207221
+\end{verbatim}
+
+\end{document}
