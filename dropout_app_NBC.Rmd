@@ -1,0 +1,327 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+---
+title: "R Notebook"
+output:
+  html_notebook: default
+  pdf_document: default
+---
+```{r}
+# Read data
+library(caret)
+library(naivebayes)
+library(readr)
+library(dplyr)
+library(readr)
+FTIC1718HMCSEDropout_DF_Completed <- read_csv("C:/Users/jk-sparks/Desktop/PAM/DropoutFTIC/FTIC1718HMCSEDropout_DF_Completed.txt", 
+                                              col_types = cols(X1 = col_skip()))
+View(FTIC1718HMCSEDropout_DF_Completed)
+
+library(readr)
+SDCompletedCropoutAllvariables08032020JAY <- read_csv("C:/Users/jk-sparks/Desktop/PAM/DropoutFTIC/SDCompletedCropoutAllvariables08032020JAY.txt", 
+                                                      col_types = cols(X1 = col_skip()))
+glimpse(SDCompletedCropoutAllvariables08032020JAY)
+
+
+```
+######################################
+### MAC1147/40 , MAC1105/C ###########
+######################################
+```{r}
+### replace MAC1147/40 and MAC1105/C
+library(stringr)
+SDCompletedCropoutAllvariables08032020JAY$ReFirstMathCrs <- 
+  str_replace_all(SDCompletedCropoutAllvariables08032020JAY$ReFirstMathCrs, "MAC1140", "MAC1147")
+SDCompletedCropoutAllvariables08032020JAY$ReFirstMathCrs <- 
+  str_replace_all(SDCompletedCropoutAllvariables08032020JAY$ReFirstMathCrs, "MAC1147", "MAC1147/40")
+SDCompletedCropoutAllvariables08032020JAY$ReFirstMathCrs <- 
+  str_replace_all(SDCompletedCropoutAllvariables08032020JAY$ReFirstMathCrs, "MAC1105C", "MAC1105")
+SDCompletedCropoutAllvariables08032020JAY$ReFirstMathCrs <- 
+  str_replace_all(SDCompletedCropoutAllvariables08032020JAY$ReFirstMathCrs, "MAC1105", "MAC1105/C")
+unique(SDCompletedCropoutAllvariables08032020JAY$ReFirstMathCrs)
+
+```
+
+```{r}
+#select original datset
+allDropout <- select(SDCompletedCropoutAllvariables08032020JAY, "Prior_Hours","GPA_HIGHSCHOOL","ReStartMajor","Gender","ReEthnicity","ReCounty","ReFirstMathCrs",
+                  "FirstMathCrsGrade","UWFHour1stTerm","UWFGPA1stTerm","ENC1101","CHM2045","BSC2010","BSC2844","PSY2012",
+                  "Drop1stYear")
+allDropout$ReStartMajor <- as.factor(allDropout$ReStartMajor)
+allDropout$Gender <- as.factor(allDropout$Gender)
+allDropout$ReEthnicity <- as.factor(allDropout$ReEthnicity)
+allDropout$ReCounty <- as.factor(allDropout$ReCounty)
+allDropout$ReFirstMathCrs <- as.factor(allDropout$ReFirstMathCrs)
+allDropout$FirstMathCrsGrade <- as.factor(allDropout$FirstMathCrsGrade)
+allDropout$ENC1101 <- as.factor(allDropout$ENC1101)
+allDropout$CHM2045 <- as.factor(allDropout$CHM2045)
+allDropout$BSC2010 <- as.factor(allDropout$BSC2010)
+allDropout$BSC2844 <- as.factor(allDropout$BSC2844)
+allDropout$PSY2012 <- as.factor(allDropout$PSY2012)
+allDropout$Drop1stYear <- as.factor(allDropout$Drop1stYear)
+
+summary(allDropout)
+```
+```{r}
+library(caret)
+# Performs stratified random split of the data set
+TrainingIndex <- createDataPartition(allDropout$Drop1stYear, p=0.8, list = FALSE)
+allDropoutTrainingSet <- allDropout[TrainingIndex,] # Training Set
+allDropoutTestingSet <- allDropout[-TrainingIndex,] # Test Set
+write.csv(allDropoutTrainingSet, "training.csv")
+write.csv(allDropoutTestingSet, "testing.csv")
+TrainSet <- read.csv("training.csv", header = TRUE)
+TrainSet <- TrainSet[,-1] #row number
+
+```
+```{r}
+# Build model using all factors and labells
+library(naivebayes)
+allmodelNB <- naive_bayes(Drop1stYear ~ ., data = allDropoutTrainingSet, usekernel = TRUE)
+
+#allmodelNB$tables
+```
+
+```{r}
+#accuracy 0.8438356 used kernel
+confMatRank <- table(predict(allmodelNB), allDropoutTrainingSet$Drop1stYear)
+confMatRank
+sum(diag(confMatRank)/sum(confMatRank)) # 0.8438356
+1-sum(diag(confMatRank)/sum(confMatRank)) 
+p <- predict(allmodelNB, allDropoutTrainingSet)
+pred <- predict(allmodelNB, allDropoutTrainingSet[c(1:10),], type="prob")
+pred
+n <- table(allDropoutTrainingSet$Drop1stYear)
+n
+n/sum(n)
+```
+
+```{r}
+# Save model to RDS file
+saveRDS(allmodelNB, "model.rds")
+# Read in the RF model
+model <- readRDS("model.rds")
+
+
+####################################
+# User interface                   #
+####################################
+library(shiny)
+library(shinythemes)
+library(data.table)
+ui <- fluidPage(theme = shinytheme("superhero"),
+                
+                # Page header
+                headerPanel('How likely to dropout?'),
+                
+                # Input values
+                sidebarPanel(
+                  HTML("<h3>Input parameters</h3>"),
+                  
+                  sliderInput("GPA_HIGHSCHOOL", label = "GPA_HIGHSCHOOL:",
+                              min = min(TrainSet$GPA_HIGHSCHOOL),
+                              max = max(TrainSet$GPA_HIGHSCHOOL),
+                              value = 3.8),
+                  sliderInput("Prior_Hours", "Prior_Hours:",
+                              min = min(TrainSet$Prior_Hours),
+                              max = max(TrainSet$Prior_Hours),
+                              value = 10),
+                  selectInput("ReStartMajor", label = "StartMajor:", 
+                              choices = list( "Natural Science" = "Natural Science",             
+                                              "Software Engineering" = "Software Engineering",      
+                                              "Mechanical Engineering" = "Mechanical Engineering",    
+                                              "Biomedical Sciences" =  "Biomedical Sciences",       
+                                              "Marine Biology" =  "Marine Biology",             
+                                              "Cybersecurity"  = "Cybersecurity",             
+                                              "Engineering" =  "Engineering",              
+                                              "Software Design & Development"="Software Design & Development",
+                                              "Computer Science"= "Computer Science",          
+                                              "Biology" = "Biology",                   
+                                              "Electrical Engineering" = "Electrical Engineering",  
+                                              "Computer Engineering"=  "Computer Engineering",       
+                                              "Biochemistry" = "Biochemistry",             
+                                             "Others" = "Others",                     
+                                             "Environmental Management"="Environmental Management",    
+                                             "Chemistry" = "Chemistry",                 
+                                             "Information Technology"= "Information Technology",      
+                                             "Physics"  = "Physics",                   
+                                             "Mathematics"="Mathematics" ), 
+                              selected = "Mathematics"),
+                  selectInput("Gender", label = "Gender:", 
+                              choices = list("Male"="M", "Female"="F"), 
+                              selected = "Male"),
+                  
+                  selectInput("ReEthnicity", label = "Ethnicity:", 
+                              choices = list( "White" = "White",        
+                                              "Two or More" = "Two or More",   
+                                              "Hispanic" = "Hispanic",     
+                                              "African American" = "African American",
+                                              "Asian" = "Asian" ,         
+                                              "Not Reported" = "Not Reported",   
+                                              "Others" = "Others" ), 
+                               selected = "White"),
+                  selectInput("ReCounty", label = "County:", 
+                              choices = list( "OKAL" = "OKAL", "ESCA" = "ESCA",
+                                              "Others" = "Others", "SANT" ="SANT",
+                                              "NFLA" = "NFLA",
+                                              "WALT" = "WALT" , "ORAN" = "ORAN",
+                                              "BAY" =  "BAY",  "PASC" = "PASC",
+                                              "DUVA"= "DUVA",
+                                              "HILL" = "HILL"), 
+                              selected = "OKAL"),
+                  selectInput("ReFirstMathCrs", label = "FirstMathCrs:", 
+                              choices = list("MAC1105/C"="MAC1105/C",
+                                             
+                                             
+                                             "MAC1147/40"="MAC1147/40",
+                                             "MAC2311"="MAC2311",
+                                             "MAC2312"="MAC2312",
+                                             "NoAttempt"="NoAttempt",
+                                             "Others"="Others"), 
+                              selected = "MAC1147"),
+                  selectInput("FirstMathCrsGrade", label = "FirstMathCrsGrade:", 
+                              choices = list("A"="A","A-"="A-","B"="B","B+"="B+","B-"="B-",
+                                             "C+"="C+","C"="C","C-"="C-","D"="D","D+"="D+",
+                                             "NoAttempt"="NoAttempt","W"="W","NF"="NF","F"="F"), 
+                              selected = "C+"),
+                  sliderInput("UWFHour1stTerm", "UWFHour1stTerm:",
+                              min = min(TrainSet$UWFHour1stTerm),
+                              max = max(TrainSet$UWFHour1stTerm),
+                              value = 9), 
+                  sliderInput("UWFGPA1stTerm", "UWFGPA1stTerm:",
+                              min = min(TrainSet$UWFGPA1stTerm),
+                              max = max(TrainSet$UWFGPA1stTerm),
+                              value = 2.3),
+                  selectInput("ENC1101", label = "ENC1101:", 
+                              choices = list("ENC1101"="ENC1101", "Others"="Others"), 
+                              selected = "ENC1101"),
+                  selectInput("CHM2045", label = "CHM2045:", 
+                              choices = list("CHM2045"="CHM2045", "Others"="Others"), 
+                              selected = "CHM2045"),
+                  selectInput("BSC2010", label = "BSC2010:", 
+                              choices = list("BSC2010"="BSC2010", "Others"="Others"), 
+                              selected = "BSC2010"),
+                  selectInput("BSC2844", label = "BSC2844:", 
+                              choices = list("BSC2844"="BSC2844", "Others"="Others"), 
+                              selected = "BSC2844"),
+                   selectInput("PSY2012", label = "PSY2012:", 
+                              choices = list("PSY2012"="PSY2012", "Others"="Others"), 
+                              selected = "PSY2012"),
+                 
+                  
+                  actionButton("submitbutton", "Submit", class = "btn btn-primary")
+                ),
+                
+                mainPanel(
+                  tags$label(h3('Status/Output')), # Status/Output Text Box
+                  verbatimTextOutput('contents'),
+                  tableOutput('tabledata') # Prediction results table
+                  
+                )
+)
+
+####################################
+# Server                           #
+####################################
+
+server <- function(input, output, session) {
+  
+  # Input Data
+  datasetInput <- reactive({  
+    
+    
+    df <- data.frame(
+      Name = c("GPA_HIGHSCHOOL",
+               "Prior_Hours",
+               "ReStartMajor",
+               "Gender",
+               "ReEthnicity",
+               "ReCounty",
+               "ReFirstMathCrs",
+               "FirstMathCrsGrade",
+               "UWFHour1stTerm",
+               "UWFGPA1stTerm",
+               "ENC1101",
+               "CHM2045",
+               "BSC2010",
+               "BSC2844",
+               "PSY2012"
+               ),
+      Value = as.character(c(input$GPA_HIGHSCHOOL,
+                             input$Prior_Hours,
+                             input$ReStartMajor,
+                             input$Gender,
+                             input$ReEthnicity,
+                             input$ReCounty,
+                             input$ReFirstMathCrs,
+                             input$FirstMathCrsGrade,
+                             input$UWFHour1stTerm,
+                             input$UWFGPA1stTerm,
+                             input$ENC1101,
+                             input$CHM2045,
+                             input$BSC2010,
+                             input$BSC2844,
+                             input$PSY2012
+                             )),
+      stringsAsFactors = FALSE)
+    
+    Drop1stYear <- 0
+    df <- rbind(df, Drop1stYear)
+    input <- transpose(df)
+    
+    write.table(input,"input.csv", sep=",", quote = FALSE, row.names = FALSE, col.names = FALSE)
+    
+    test <- read.csv(paste("input", ".csv", sep=""), header = TRUE)
+    
+    test$ReFirstMathCrs <- factor(test$FirstMathCrs, levels = c("MAC1105/C","MAC2311","MAC1147/40","Others",
+                                                              "MAC2312","NoAttempt"))
+    test$FirstMathCrsGrade <- factor(test$FirstMathCrsGrade, levels = c("A"  ,       "B"  ,       "D"  ,       "NoAttempt",
+                                                                        "C-"    ,    "B+"   ,     "B-"   ,     "C+"   ,    
+                                                                         "A-"   ,     "W"  ,       "C" ,        "F"  ,      
+                                                                        "NF","D+"))
+    test$ReEthnicity <- factor(test$ReEthnicity, levels = c("White" , "Hispanic",    
+                                                            "Two or More",      "African American",
+                                                            "Others",           "Asian",           
+                                                            "Not Reported"))
+    
+    test$Gender <- factor(test$Gender, levels=c("M","F"))
+    test$ENC1101 <- factor(test$ENC1101, levels=c("ENC1101","Others"))
+    test$PSY2012 <- factor(test$PSY2012, levels=c("PSY2012","Others"))
+    test$CHM2045 <- factor(test$CHM2045, levels=c("CHM2045","Others"))
+    test$BSC2010 <- factor(test$BSC2010, levels=c("BSC2010","Others"))
+    test$BSC2844 <- factor(test$BSC2844, levels=c("BSC2844","Others"))
+    
+
+    
+    Output <- data.frame(Prediction=round(predict(allmodelNB,test,type="prob"), 3))
+    print(Output)
+  })
+  
+  
+  # Status/Output Text Box
+  output$contents <- renderPrint({
+    if (input$submitbutton>0) { 
+      isolate("Calculation complete.") 
+    } else {
+      return("Please,ready for calculation.")
+    }
+  })
+  
+  # Prediction results table
+  output$tabledata <- renderTable({
+    if (input$submitbutton>0) { 
+      isolate(datasetInput()) 
+    } 
+  })
+  
+}
+
+####################################
+# Create the shiny app             #
+####################################
+shinyApp(ui = ui, server = server)
+```
+
