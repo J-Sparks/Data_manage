@@ -11,7 +11,7 @@ confMatRank
 #Accurecy
 sum(diag(confMatRank)/sum(confMatRank)) # 0.8438356
 
-# misclassfication
+# misclassification
 1-sum(diag(confMatRank)/sum(confMatRank)) 
 
 # Predition with type = probability
