@@ -1,0 +1,46 @@
+---
+title: "DataShaping_FTIC 1st Fall Term GPA _UWF(2015~2019)"
+output: html_notebook
+---
+
+
+
+```{r}
+### imported the enrollments data
+STU_ENROLLMENT_SPRING20 <- read_csv("C:/Users/jsparks3/Downloads/drive-download-20200901T135512Z-001/STU_ENROLLMENT_SPRING20.csv")
+View(STU_ENROLLMENT_SPRING20)
+```
+
+```{r}
+FTIC_1stTerm_ALL <- STU_ENROLLMENT_SPRING20 %>% 
+  filter(Stu_StudentTypeCode == "B" & # for FTIC
+            Stu_LoadIPEDSFTPT=="Full Time" & # full time
+           Stu_AdmissionRecentTypeCode=="B" & # FTIC
+           Stu_DEMO_TIME_FRAME >= 201505 ) %>% # data quality since 2015
+  group_by(STU_ID) %>% 
+  filter(str_detect(Stu_Term,"Fall...")) %>% 
+  separate(Stu_AdmissionTerm, into = c("Term","Cohort"),sep=" ")
+xtabs(~FTIC_1stTerm_ALL$Cohort+FTIC_1stTerm_ALL$Stu_CollegeCode)
+#write.csv(FTIC_1stTerm_ALL,"FTIC_1stTerm_ALL.csv")
+```
+
+
+
+```{r}
+## choose variables for loaded crs hrs and totalgradepoints and 1st term GPA
+FTIC_1stTerm_vari <- FTIC_1stTerm_ALL %>% 
+  select(1:3,Cohort,Stu_Age,Stu_DivisionCode,Stu_MajorDesc,Stu_Gender,Stu_Ethnicity,Stu_FeeResidency,Stu_County,Stu_State,Stu_Nation,Stu_AdmissionTermCode,contains("GPA"),Stu_College,Stu_Department,contains("Total"),Stu_CurrentTermLoad)
+
+```
+
+```{r}
+FTIC_1stFallTermDF <- FTIC_1stTerm_ALL %>% 
+  select(Cohort,Stu_Gender,Stu_Gender,Stu_MajorDesc,Stu_Ethnicity,Stu_County,
+         Stu_State,Stu_Nation,Stu_College,Stu_Department,Stu_CurrentTermLoad,
+         "PriorHrs"=Stu_TotalUniversityHours,Stu_TotalInstHours,Stu_TotalInstGradePoints,
+         contains("GPA")) %>% 
+         mutate(GPA1stFall=Stu_GPAGradePoints/Stu_GPATermHours)
+
+FTIC_1stFallTerm <- select(FTIC_1stFallTerm,-19);glimpse(FTIC_1stFallTerm)#repeat for 20variables
+```
+
