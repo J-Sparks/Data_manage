@@ -20,9 +20,9 @@ FTIC_1stTerm_ALL_select <- FTIC_1stTerm_ALL_DF %>%
 GPA1stFall_na <- FTIC_1stTerm_ALL_select$GPA1stFall
 GPA1stFall_na[is.na(GPA1stFall_na)] <- 0
 FTIC_1stTerm_ALL_select$GPA1stFall <- GPA1stFall_na
-FTIC_1stTerm_ALL_select$rankGPA1stFall <- ifelse(FTIC_1stTerm_ALL_selectSpring$GPA1stFall<1.0,"Under1.0",
-                                                         ifelse(FTIC_1stTerm_ALL_selectSpring$GPA1stFall<1.5,"under1.5",
-                                                                ifelse(FTIC_1stTerm_ALL_selectSpring$GPA1stFall<2.0,"under2.0","above2.0")))
+FTIC_1stTerm_ALL_select$rankGPA1stFall <- ifelse(FTIC_1stTerm_ALL_select$GPA1stFall<1.0,"Under1.0",
+                                                         ifelse(FTIC_1stTerm_ALL_select$GPA1stFall<1.5,"under1.5",
+                                                                ifelse(FTIC_1stTerm_ALL_select$GPA1stFall<2.0,"under2.0","above2.0")))
 xtabs(~FTIC_1stTerm_ALL_select$Cohort+FTIC_1stTerm_ALL_select$rankGPA1stFall)
 ########################################
 ## to get Spring semester GPA for FTIC #
