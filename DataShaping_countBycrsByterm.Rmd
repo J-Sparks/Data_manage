@@ -1,0 +1,216 @@
+---
+title: "R Notebook"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+crs <- read.csv(file.choose(), header = T)
+m4 <- read.csv(file.choose(), header = T)
+
+
+
+
+```
+
+```{r}
+library(dplyr)
+# FTIC 2012 Course Trends
+FTIC_ID <- select(m4, 1:3,"Stu_CollegeBegin","Stu_DepartmentBegin")
+FTIC_2012above <- filter(FTIC_ID, FTIC_ID$Cohort > 2011)
+```
+
+
+```{r}
+#getting crs
+FTIC2012_id <- filter(FTIC_2012above, FTIC_2012above$Cohort == 2012) #FTIC2012 ID only
+A_crs_ftic2012 <- filter(crs, crs$Course_DEMO_TIME_FRAME >=201208)
+crs_ftic2012 <- filter(A_crs_ftic2012, A_crs_ftic2012$Course_DEMO_TIME_FRAME <= 201401)
+Re_crs_ftic2012 <- select(crs_ftic2012, 1:2,7,"Course_CrsDepartmentCode")
+```
+
+```{r}
+#merge for only ftic
+
+A_FTIC_2012_crs <- merge(FTIC2012_id, Re_crs_ftic2012,  by = "STU_ID", all.x = TRUE)
+write.csv(A_FTIC_2012_crs, "FTIC2012.csv")
+```
+
+```{r}
+glimpse(m4)
+```
+```{r}
+table(m4$Cohort)
+```
+```{r}
+table(m4$Cohort, m4$Stu_CollegeBegin)
+```
+```{r}
+#FTIC2012_crs
+FTIC_ID <- select(m4, 1:3,"Stu_CollegeBegin","Stu_DepartmentBegin")
+FTIC_2012above <- filter(FTIC_ID, FTIC_ID$Cohort > 2011)
+#getting crs
+FTIC2012_id <- filter(FTIC_2012above, FTIC_2012above$Cohort == 2012) #FTIC2012 ID only
+A_crs_ftic2012 <- filter(crs, crs$Course_DEMO_TIME_FRAME >=201208)
+crs_ftic2012 <- filter(A_crs_ftic2012, A_crs_ftic2012$Course_DEMO_TIME_FRAME <= 201401)
+Re_crs_ftic2012 <- select(crs_ftic2012, 1:2,7,"Course_CrsDepartmentCode")
+#merge for only ftic
+A_FTIC_2012_crs <- merge(FTIC2012_id, Re_crs_ftic2012,  by = "STU_ID", all.x = TRUE)
+write.csv(A_FTIC_2012_crs, "FTIC2012.csv")
+```
+
+```{r}
+#FTIC2013_crs
+#FTIC_ID <- select(m4, 1:3,"Stu_CollegeBegin","Stu_DepartmentBegin")
+#FTIC_2012above <- filter(FTIC_ID, FTIC_ID$Cohort > 2011)
+#getting crs
+FTIC2013_id <- filter(FTIC_2012above, FTIC_2012above$Cohort == 2013) #FTIC2013 ID only
+A_crs_ftic2013 <- filter(crs, crs$Course_DEMO_TIME_FRAME >=201308)
+crs_ftic2013 <- filter(A_crs_ftic2013, A_crs_ftic2013$Course_DEMO_TIME_FRAME <= 201501)
+Re_crs_ftic2013 <- select(crs_ftic2013, 1:2,7,"Course_CrsDepartmentCode")
+#merge for only ftic
+A_FTIC_2013_crs <- merge(FTIC2013_id, Re_crs_ftic2013,  by = "STU_ID", all.x = TRUE)
+write.csv(A_FTIC_2013_crs, "FTIC2013.csv")
+
+```
+
+```{r}
+#FTIC2014_crs
+#FTIC_ID <- select(m4, 1:3,"Stu_CollegeBegin","Stu_DepartmentBegin")
+#FTIC_2012above <- filter(FTIC_ID, FTIC_ID$Cohort > 2011)
+#getting crs
+FTIC2014_id <- filter(FTIC_2012above, FTIC_2012above$Cohort == 2014) #FTIC2014 ID only
+A_crs_ftic2014 <- filter(crs, crs$Course_DEMO_TIME_FRAME >=201408)
+crs_ftic2014 <- filter(A_crs_ftic2014, A_crs_ftic2014$Course_DEMO_TIME_FRAME <= 201601)
+Re_crs_ftic2014 <- select(crs_ftic2014, 1:2,7,"Course_CrsDepartmentCode")
+#merge for only ftic
+A_FTIC_2014_crs <- merge(FTIC2014_id, Re_crs_ftic2014,  by = "STU_ID", all.x = TRUE)
+write.csv(A_FTIC_2014_crs, "FTIC2014.csv")
+
+```
+
+```{r}
+#FTIC2015_crs
+FTIC2014_id <- filter(FTIC_2012above, FTIC_2012above$Cohort == 2014) #FTIC2013 ID only
+A_crs_ftic2014 <- filter(crs, crs$Course_DEMO_TIME_FRAME >=201408)
+crs_ftic2014 <- filter(A_crs_ftic2014, A_crs_ftic2014$Course_DEMO_TIME_FRAME <= 201601)
+Re_crs_ftic2014 <- select(crs_ftic2014, 1:2,7,"Course_CrsDepartmentCode")
+#merge for only ftic
+A_FTIC_2014_crs <- merge(FTIC2014_id, Re_crs_ftic2014,  by = "STU_ID", all.x = TRUE)
+write.csv(A_FTIC_2014_crs, "FTIC2014.csv")
+
+```
+
+```{r}
+#FTIC2016_crs
+FTIC2016_id <- filter(FTIC_2012above, FTIC_2012above$Cohort == 2016) #FTIC2013 ID only
+A_crs_ftic2016 <- filter(crs, crs$Course_DEMO_TIME_FRAME >=201608)
+crs_ftic2016 <- filter(A_crs_ftic2016, A_crs_ftic2016$Course_DEMO_TIME_FRAME <= 201801)
+Re_crs_ftic2016 <- select(crs_ftic2016, 1:2,7,"Course_CrsDepartmentCode")
+#merge for only ftic
+A_FTIC_2016_crs <- merge(FTIC2016_id, Re_crs_ftic2016,  by = "STU_ID", all.x = TRUE)
+write.csv(A_FTIC_2016_crs, "FTIC2016.csv")
+
+```
+
+```{r}
+#FTIC2017_crs
+FTIC2017_id <- filter(FTIC_2012above, FTIC_2012above$Cohort == 2017) #FTIC2013 ID only
+A_crs_ftic2017 <- filter(crs, crs$Course_DEMO_TIME_FRAME >=201708)
+crs_ftic2017 <- filter(A_crs_ftic2017, A_crs_ftic2017$Course_DEMO_TIME_FRAME <= 201901)
+Re_crs_ftic2017 <- select(crs_ftic2017, 1:2,7,"Course_CrsDepartmentCode")
+#merge for only ftic
+A_FTIC_2017_crs <- merge(FTIC2017_id, Re_crs_ftic2017,  by = "STU_ID", all.x = TRUE)
+write.csv(A_FTIC_2017_crs, "FTIC2017.csv")
+
+```
+
+```{r}
+#FTIC2018_crs### only one year of enrollments
+FTIC2018_id <- filter(FTIC_2012above, FTIC_2012above$Cohort == 2018) #FTIC2013 ID only
+A_crs_ftic2018 <- filter(crs, crs$Course_DEMO_TIME_FRAME >=201808)
+crs_ftic2018 <- filter(A_crs_ftic2018, A_crs_ftic2018$Course_DEMO_TIME_FRAME <= 201901)
+Re_crs_ftic2018 <- select(crs_ftic2018, 1:2,7,"Course_CrsDepartmentCode")
+#merge for only ftic
+A_FTIC_2018_crs <- merge(FTIC2018_id, Re_crs_ftic2018,  by = "STU_ID", all.x = TRUE)
+write.csv(A_FTIC_2018_crs, "FTIC2018.csv")
+
+```
+
+```{r}
+#rbine the FTIC 2012-2018
+FTIC_crs_12to18_fivesemesters <- rbind(A_FTIC_2012_crs,A_FTIC_2013_crs,A_FTIC_2014_crs,A_FTIC_2015_crs,A_FTIC_2016_crs,A_FTIC_2017_crs,A_FTIC_2018_crs)
+write.csv(FTIC_crs_12to18_fivesemesters, "FTIC_12to18_CRS_fivesemesters.csv")
+```
+
+```{r}
+new_crs <- filter(crs, crs$Course_CrsDepartmentCode == "MAT")
+new_crs_mac1147 <- filter(new_crs, new_crs$Course_CrsCombined == "MAC1147")
+table(new_crs_mac1147$Course_Term   )
+```
+```{r}
+new_crs <- filter(crs, crs$Course_CrsDepartmentCode == "MAT")
+new_crs_mac1140 <- filter(new_crs, new_crs$Course_CrsCombined == "MAC1140")
+table(new_crs_mac1140$Course_Term   )
+```
+```{r}
+new_crs <- filter(crs, crs$Course_CrsDepartmentCode == "MAT")
+new_crs_mac1105 <- filter(new_crs, new_crs$Course_CrsCombined == "MAC1105")
+table(new_crs_mac1105$Course_Term   )
+
+```
+
+```{r}
+new_crs_mac2311 <- filter(new_crs, new_crs$Course_CrsCombined == "MAC2311")
+table(new_crs_mac2311$Course_Term   )
+
+```
+```{r}
+new_crs_mac1105C <- filter(new_crs, new_crs$Course_CrsCombined == "MAC1105C")
+table(new_crs_mac1105C$Course_Term   )
+
+```
+
+```{r}
+new_crs <- filter(crs, crs$Course_CrsDepartmentCode == "BY")
+new_crs_bsc2010 <- filter(new_crs, new_crs$Course_CrsCombined == "BSC2010")
+table(new_crs_bsc2010$Course_Term   )
+
+```
+
+```{r}
+new_crs <- filter(crs, crs$Course_CrsDepartmentCode == "BY")
+new_crs_bsc2011 <- filter(new_crs, new_crs$Course_CrsCombined == "BSC2011")
+table(new_crs_bsc2011$Course_Term   )
+
+```
+
+```{r}
+new_crs <- filter(crs, crs$Course_CrsDepartmentCode == "CHM")
+new_crs_chm2045 <- filter(new_crs, new_crs$Course_CrsCombined == "CHM2045")
+table(new_crs_chm2045$Course_Term   )
+
+```
+
+```{r}
+mac_crs <- filter(crs, crs$Course_CrsPrefix == "MAC")
+table(mac_crs$Course_DEMO_TIME_FRAME, mac_crs$Course_CrsCombined)
+y = xtabs(~mac_crs$Course_DEMO_TIME_FRAME+mac_crs$Course_CrsCombined, mac_crs)
+library(plyr)
+x=count(mac_crs, c('Course_CrsCombined','Course_Term'))
+x
+```
+
+```{r}
+#library(plyr)
+mac_crs <- filter(crs, crs$Course_CrsPrefix == "MAC")
+x=count(mac_crs, c('Course_CrsCombined','Course_Term'))
+x
+
+```
+
