@@ -1,0 +1,284 @@
+---
+title: "4_yrs_Time"
+author: "Jay Kim"
+date: "October 22, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+m4 <- read.csv(file.choose(),header = T)
+summary(m4$Stu_TotalUniversityHoursBegin)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(m4$Stu_TotalInstHours4)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+# filter for cohort 2008 to 2013
+cohort08to13 <- filter(m4, m4$Cohort < 2014)
+unique(cohort08to13$Cohort)
+```
+
+```{r}
+library(tidyverse)
+xtabs(Cohort~ FOURYEARGRAD + SUMMERSTART + Stu_CollegeBegin, cohort08to13)
+```
+```{r}
+
+colnames(cohort08to13)
+```
+
+```{r}
+mychange_data <- HMCSE_net_data_ba
+write.csv(mychange_data, "HMCSE_change_4yrs.csv")
+
+
+```
+```{r}
+# filtering data for 4years with deg_banner _program_code
+
+deg_4yrs_depart <- select(mychange_data, 1, "Deg_GenderCode","Deg_Ethnicity", "Stu_BannerProgramCodeBegin",  "Deg_BannerProgramCode" ,"FOURYEARGRAD")
+```
+
+```{r}
+#logistic regression
+
+lg_model <- glm(FOURYEARGRAD~Deg_GenderCode+Deg_Ethnicity+Stu_BannerProgramCodeBegin+Deg_BannerProgramCode , data=deg_4yrs_depart, family = "binomial")
+summary(lg_model)
+```
+
+```{r}
+depar_4yrs_data <- select(mychange_data)
+my_change <- read.csv(file.choose(), header = T) # read "change_4yrs.csv"
+
+```
+
+```{r}
+data_lg02 <- select(my_change, 2:5, "Stu_BannerProgramCodeChange",  "Stu_CollegeChange", "Stu_DepartmentChange",   "FOURYEARGRAD")
+
+data_lg02$Stu_BannerProgramCodeChange <- ifelse(data_lg02$Stu_BannerProgramCodeChange == "Yes",1,0)
+data_lg02$Stu_DepartmentChange <- ifelse(data_lg02$Stu_DepartmentChange == "Yes",1,0)
+data_lg02$Stu_CollegeChange <- ifelse(data_lg02$Stu_CollegeChange == "Yes",1,0)
+
+```
+
+```{r}
+# need to unite two college and two departments in one column
+glimpse(my_change)
+```
+
+
+```{r}
+#model 02
+
+lg_model_02 <- glm(FOURYEARGRAD~ Deg_GenderCode+ Deg_Ethnicity+Deg_Major+Stu_BannerProgramCodeChange+Stu_CollegeChange+Stu_DepartmentChange, data = data_lg02, family = "binomial")
+summary(lg_model_02)
+```
+```{r}
+#prediction
+p1 <- predict(lg_model_02, data_lg02, type="response")
+p1
+pred1 <- ifelse(p1>0.5,1,0)
+pred1
+tab1 <- table(predicted = pred1)
+tab1
+
+
+```
+```{r}
+my_change$Stu_BannerProgramCodeChange <- ifelse(my_change$Stu_BannerProgramCodeChange == "Yes",1,0)
+my_change$Stu_DepartmentChange <- ifelse(my_change$Stu_DepartmentChange == "Yes",1,0)
+my_change$Stu_CollegeChange <- ifelse(my_change$Stu_CollegeChange == "Yes",1,0)
+head(my_change,10)
+```
+
+```{r}
+colnames(my_change)
+```
+
+```{r}
+#unite for college and departments
+
+my_change$x1 <- "to"
+unite(my_change, "Stu_CollegeBegin_to",  Stu_CollegeBegin:x1)
+glimpse(my_change)
+```
+```{r}
+apr_crs <- read.csv(file.choose(), header = T)
+my_mac2311_term <- select(apr_crs, "STU_ID", "MAC2311Sem1","MAC2311Sem2","MAC2311Sem3","MAC2311Year1")
+
+```
+
+```{r}
+# merge with my_change and my_mac2311_term
+
+my_cha_mac_term <- merge(my_mac2311_term, my_change, by = "STU_ID", all.b = TRUE)
+glimpse(my_cha_mac_term)
+```
+```{r}
+unite(my_cha_mac_term, "Stu_CollegeBegin_x1", c("Stu_CollegeBegin","x1"))
+unite(my_cha_mac_term, "Stu_CollegeBegin_x1", c("Stu_CollegeBegin","x1"))
+unite(my_cha_mac_term, "Stu_CollegeBegin_to_Stu_CollegeEnd", c("Stu_CollegeBegin", "x1" , "Stu_CollegeEnd"))
+unite(my_cha_mac_term, "Stu_CollegeBegin_to_Stu_CollegeEnd", c("Stu_CollegeBegin", "x1" , "Deg_College"))
+my_cha_mac_term$Stu_DepartBegin_to_Stu_DepartEnd <- paste(my_cha_mac_term$Stu_DepartmentBegin, "_to_", my_cha_mac_term$Deg_Department)
+my_cha_mac_term$Stu_CollegeBegin_to_Stu_CollegeEnd <- paste(my_cha_mac_term$Stu_CollegeBegin, "_to_", my_cha_mac_term$Deg_College)
+
+
+```
+
+```{r}
+unite(my_cha_mac_term, "Stu_CollegeBegin_x1", c("Stu_CollegeBegin","x1"))
+unite(my_cha_mac_term, "Stu_CollegeBegin_x1", c("Stu_CollegeBegin","x1"))
+unite(my_cha_mac_term, "Stu_CollegeBegin_to_Stu_CollegeEnd", c("Stu_CollegeBegin", "x1" , "Stu_CollegeEnd"))
+my_cha_mac_term$Stu_departBegintoEnd <- paste(my_cha_mac_term$Stu_DepartmentBegin, "_to_", my_cha_mac_term$Stu_DepartmentEnd)
+
+```
+
+```{r}
+mydata <- my_cha_mac_term
+mydata <- as.data.frame(mydata)
+write.csv(mydata, "APR_MAC2311_Term_4yrs.csv")
+glimpse(mydata)
+```
+
+```{r}
+New_mydata <- select(mydata, 1:33)
+head(New_mydata,20)
+
+```
+
+```{r}
+New_mydata$Colle_changed <- paste(New_mydata$Stu_CollegeBegin, "_to_", New_mydata$Deg_College)
+New_mydata$Depart_chnage <- paste(New_mydata$Stu_DepartmentBegin, "_to_", New_mydata$Deg_Department)
+head(New_mydata,20)
+```
+
+```{r}
+New_mydata$MAC2311Sem1 <- ifelse(New_mydata$MAC2311Sem1 == "Yes", 1,0)
+New_mydata$MAC2311Sem2 <- ifelse(New_mydata$MAC2311Sem2 == "Yes", 1,0)
+New_mydata$MAC2311Sem3 <- ifelse(New_mydata$MAC2311Sem3 == "Yes", 1,0)
+New_mydata$MAC2311Year1 <- ifelse(New_mydata$MAC2311Year1 == "Yes", 1,0)
+glimpse(New_mydata)
+
+
+```
+
+```{r}
+# select column for Test
+#import the data Change_depar_4yrs
+New_mydata <- Change_depar_4yrs
+New_mydata <- select(New_mydata,-1)
+
+my_change_mac_time <- select(New_mydata, 2:8, 34:35,  15)
+my_change_mac_time$MAC2311Sem1 <- as.factor(my_change_mac_time$MAC2311Sem1)
+my_change_mac_time$MAC2311Sem2 <- as.factor(my_change_mac_time$MAC2311Sem2)
+my_change_mac_time$MAC2311Sem3 <- as.factor(my_change_mac_time$MAC2311Sem3)
+my_change_mac_time$MAC2311Year1 <- as.factor(my_change_mac_time$MAC2311Year1)
+my_change_mac_time$Depart_chnage<- as.factor(my_change_mac_time$Depart_chnage)
+my_change_mac_time$Colle_changed <- as.factor(my_change_mac_time$Colle_changed)
+my_change_mac_time$FOURYEARGRAD <- as.factor(my_change_mac_time$FOURYEARGRAD)
+
+
+glimpse(my_change_mac_time)
+```
+
+
+```{r}
+#data partition
+set.seed(123)
+ind <- sample(2, nrow(my_change_mac_time), replace = T, prob = c(0.8,0.2))
+train <- my_change_mac_time[ind==1,]
+test <- my_change_mac_time[ind==2,]
+
+```
+
+
+
+
+
+```{r}
+model_glm_mactime <- glm(FOURYEARGRAD ~ MAC2311Sem2+MAC2311Sem3+Deg_GenderCode+Colle_changed+Depart_chnage, data = my_change_mac_time, family = "binomial")
+summary(model_glm_mactime)
+```
+```{r}
+write.csv(my_change_mac_time, "my_change_mac_time.csv")
+```
+
+
+
+```{r}
+#prediction
+
+p1 <- predict(model_glm_mactime, train, type = 'response')
+head(p1)
+```
+
+```{r}
+head(train)
+```
+```{r}
+pred1 <- ifelse(p1>0.5, 1,0)
+tab1 <- table(Predicted = pred1, Actrual = train$FOURYEARGRAD)
+tab1
+```
+
+```{r}
+1-sum(diag(tab1))/sum(tab1)
+```
+
+```{r}
+p2 <- predict(model_glm_mactime, test, type = 'response')
+pred2 <-  ifelse(p2 > 0.5, 1,0)
+tab2 <- table(Predicted = pred2, Actual = test$FOURYEARGRAD)
+tab2
+1-sum(diag(tab2))/sum(tab2)
+```
+
+```{r}
+p1 <- predict(model_glm_mactime, my_change_mac_time, type = 'response')
+pred1 <- ifelse(p1>0.5, 1,0)
+tab1 <- table(Predicted = pred1, Actrual = my_change_mac_time$FOURYEARGRAD)
+tab1
+
+```
+
+```{r}
+1-sum(diag(tab1))/sum(tab1)
+
+```
+```{r}
+# Goodness of fit test
+
+with(model_glm_mactime, pchisq(null.deviance - deviance, df.null -df.residual, lower.tail = F))
+```
+```{r}
+# overall effect size
+ll.null <- model_glm_mactime$null.deviance/-2
+ll.proposed <- model_glm_mactime$deviance/-2
+(ll.null - ll.proposed)/ ll.null
+1-pchisq(2*(ll.proposed - ll.null), df=(length(model_glm_mactime$coefficients)-1))
+
+```
+
+
+```{r}
+
+
+```
+
