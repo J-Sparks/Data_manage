@@ -1,0 +1,158 @@
+
+```{r}
+crs <- read_csv("crs_01.csv")
+View(crs_01)
+enr <- STU_ENROLLMENT
+write.csv(enr, "enr.csv")
+deg <- STUDENT_DEGREE
+write.csv(deg, "deg.csv")
+m4_01 <- M4
+write.csv(m4_01, "M4_01.csv")
+```
+
+```{r}
+library(dplyr)
+head(crs_01, 10)
+crs_01 <- select(crs_01, -1)
+head(crs_01, 10)
+```
+```{r}
+head(enr, 10)
+
+
+```
+```{r}
+head(deg, 10)
+```
+```{r}
+head(m4_01, 10)
+m4_01 <- select(m4_01, -1)
+head(m4_01, 10)
+```
+```{r}
+  enr_2008above <- filter(enr, enr$Stu_DEMO_TIME_FRAME >= 200808)
+head(enr_2008above, 10)
+
+```
+```{r}
+order_enr  %>% 
+  group_by(STU_ID)
+```
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(Lahman)
+enr_df <- enr
+enr_df <- tbl_df(enr_df)
+head(enr_df)
+```
+
+```{r}
+
+#m4_01 and deg combined
+ID_deg <- select(deg, 1:2)
+NEW_DF <- merge(m4_01, ID_deg, by = "STU_ID", all.y = TRUE)
+na_df <- NEW_DF %>%  filter(!is.na(Cohort))
+head(na_df, 20)
+
+```
+```{r}
+library(nycflights13)
+group_by(Cohort)
+na_df <- as.data.frame(na_df)
+na_df$Cohort <- as.factor(na_df$Cohort)
+na_df %>% group_by(STU_ID,Cohort, decreaing = TRUE) %>% 
+  summarise(Cohort = n())
+```
+
+```{r}
+table(na_df$Cohort, na_df$FOURYEARGRAD)
+```
+
+```{r}
+crs_02 <- filter(crs_01, crs_01$Course_DEMO_TIME_FRAME >= 200808)
+head(crs_02, 100)
+```
+```{r}
+mac2312 <- filter(crs_02, crs_02$Course_CrsCombined=="MAC2312")
+mac2312 %>%  group_by(STU_ID)
+duplicated(mac2312$STU_ID)
+```
+
+```{r}
+#mutate
+df <- mac2312
+df <- df %>% 
+  group_by(STU_ID) %>% 
+  mutate(grouped_id = row_number())
+df
+```
+
+```{r}
+glimpse(df)
+```
+```{r}
+c
+```
+
+```{r}
+ddbb <- table(df$Course_StuMajorDesc,df$grouped_id)
+ddbb
+```
+```{r}
+rownames(ddbb[1])
+colnames(ddbb)[1] ="1"
+head(ddbb)
+ne_frame <- print(ddbb)
+ne_frame
+write.csv(ne_frame, "Bmac2312_repeated.csv")# works
+```
+
+
+```{r}
+unique(df$grouped_id)
+```
+```{r}
+View(df)
+```
+```{r}
+glimpse(crs_01)
+```
+
+```{r}
+crs_A <- crs_01
+crs_A <- crs_A %>% 
+  group_by(STU_ID, Course_CrsCombined) %>% 
+  mutate(grouped_id = row_number())
+crs_A
+```
+```{r}
+glimpse(crs_A)
+```
+
+```{r}
+crs_Aa <- select(crs_A, 1:2, "Course_CrsCombined","Course_StuMajorDesc",103 )
+tail(crs_Aa,200)
+```
+
+```{r}
+table(crs_Aa$Course_StuMajorDesc, crs_Aa$grouped_id)
+```
+```{r}
+table(crs_A$Course_CrsCollegeCode, crs_A$grouped_id)
+```
+```{r}
+library(dplyr)
+table(crs_A$Course_StuCollege, crs_A$grouped_id)
+```
+
+
+
+```{r}
+#how many times repeated a course a cross majors
+write.csv(crs_Aa, "need_re_visit_Howmaytimesrpeated.csv")
+```
+
+
+
