@@ -1,0 +1,145 @@
+
+
+
+```{r}
+crs <-COURSE_STUDENT_INSTRUCTION
+library(dplyr)
+glimpse(mycrs)
+mycrs_M <- filter(crs, crs$Course_CrsCollegeCode == "M") # Health college
+
+#histogram
+hist(mycrs_M $Course_StuAge, breaks = 20, ylim = c(5000,80000), xlim=c(15,80),col = "Blue", main = "Histogram of Students Age in Health College")
+```
+
+```{r}
+#Bar plot
+
+plot(mycrs_M$Course_Term, col="light blue", main= "Bar Plot for Health of College" )
+```
+
+```{r}
+plot(mycrs_M$Course_CrsLevel , col="light blue", main= "Bar Plot for Health of College" )
+
+
+```
+
+```{r}
+plot(mycrs_M$Course_StuDivisionCode , col="light blue", main= "Bar Plot for Health of College" )
+```
+```{r}
+plot(mycrs_M$Course_CrsDeliveryMethod , col="light blue", main= "Bar Plot for Health of College" )
+
+```
+
+```{r}
+##ggplot
+ggplot(data=mycrs_M, aes(x=mycrs_M$Course_CrsNumber))+
+  geom_histogram(aes(fill=mycrs_M$Course_CrsDeliveryMethod), color="Black", bins = 20)+
+  facet_grid(mycrs_M$Course_CrsDeliveryMethod~.)
+```
+
+
+
+```{r}
+unique(mycrs_M$Course_CrsDepartment)
+
+```
+```{r}
+#pie chart
+pie(table(mycrs_M$Course_CrsDepartmentCode))
+```
+
+```{r}
+#box plot
+
+boxplot(Course_CrsCalcCombinedEnrollment ~ mycrs_M$Course_Term, mycrs_M)
+```
+
+```{r}
+
+#scatter plot
+
+plot(mycrs_M$Course_CrsCalcCombinedFundableCreditHours, mycrs_M$Course_CrsEnrollment)
+
+```
+
+```{r}
+# filter the recent terms
+summary(mycrs_M)
+```
+```{r}
+# enrollment DATA
+myenr <- STU_ENROLLMENT
+myenr_M <- filter(STU_ENROLLMENT, STU_ENROLLMENT$Stu_Term == "Spring 2019" & STU_ENROLLMENT$Stu_CollegeCode == "M")
+glimpse(myenr_M)
+
+```
+```{r}
+plot(myenr_M$Stu_DivisionCode, col= "light green")
+
+```
+
+```{r}
+pie(table(myenr_M$Stu_ResidenceHall))
+```
+
+```{r}
+#box plot
+boxplot(Stu_TotalInstGradePoints ~ Stu_DivisionCode , myenr_M)
+```
+
+```{r}
+# scatter plot
+myenrM_lower <- filter(myenr_M, myenr_M$Stu_DivisionCode == "L")
+myenr_senior <- filter(myenr_M, myenr_M$Stu_Classification == "Senior")
+plot(myenr_M$Stu_GPASemester, myenr_M$Stu_TotalInstGradePoints)
+
+```
+
+```{r}
+myenrM_senior  <- select(myenr_senior, 1, "Stu_MajorDesc","Stu_GenderCode","Stu_AdmissionRecentTypeCode","Stu_GPATermHours","Stu_GPAGradePoints","Stu_GPASemester","Stu_TotalUniversityHours","Stu_TotalInstHours","Stu_TotalInstGradePoints")
+glimpse(myenrM_senior)
+```
+```{r}
+#Multi_plot
+
+pairs(myenrM_senior[5:10])
+```
+```{r}
+library(scatterplot3d)
+#scatter plot 3D
+scatterplot3d(myenrM_senior$Stu_TotalUniversityHours, myenrM_senior$Stu_TotalInstHours, myenrM_senior$Stu_TotalInstGradePoints)
+
+```
+
+```{r}
+#contour plot
+
+filled.contour(volcano, color= terrain.colors, asp=1, plot.axes = contour(myenrM_senior, add=T))
+```
+
+```{r}
+#3d surface plot
+persp(volcano, theta = 25, phi = 30, expand = 0.5, col="lightblue" )
+```
+
+```{r}
+library(devtools)
+library(rpivotTable)
+```
+```{r}
+## one line to create pivot table
+write.csv(myenrM_senior, "myenr_M_senior.csv")
+glimpse(myenrM_senior)
+```
+
+```{r}
+
+## one line to creat pivot table
+rpivotTable(myenrM_senior, rows = "Stu_MajorDesc", col="Count", aggregatorName = "Count", vals= "Stu_MajorDesc", rendererName = "Treemap" )
+
+```
+```{r}
+write.csv(myenr_M, "myenr_HEALTH.csv")
+```
+
