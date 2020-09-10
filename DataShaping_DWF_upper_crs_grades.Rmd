@@ -1,0 +1,107 @@
+---
+title: "How to get upper division course"
+author: "Jay Kim"
+date: "February 3, 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### read.csv for Course data set
+```{r}
+crs_201905 <- read.csv(file.choose(), header = T) # COURSE_INSTRUCTION_ END 201905 # 1183212
+
+#filter for upper division courses 3000~4000 for HMCSE
+crs_upper <- filter(crs_201905, crs_201905$Course_CrsNumber >= 3000 & crs_201905$Course_CrsNumber < 5000) #611500
+
+# make sure the range of course numbers
+range(crs_upper$Course_CrsNumber)  # 3000~4999
+
+# filter for HMCSE collede code is "A"
+crs_upper_HMCSE <- filter(crs_upper, crs_upper$Course_CrsCollegeCode == "A") #125034
+
+```
+
+```{r}
+attach(crs_upper_HMCSE)
+library(xtable)
+library(dplyr)
+#xtabs(Course_CrsDepartment ~ Course_CrsCalcCombinedEnrollment, data = crs_upper_HMCSE)
+
+```
+
+
+```{r}
+unique(crs_upper_HMCSE$Course_CrsGradeAwarded)
+```
+
+
+```{r}
+# want to know how many them are the graders are using count function
+# 1st
+#countgrade <- crs_upper_HMCSE %>% 
+ # select(crs_upper_HMCSE$STU_ID, crs_upper_HMCSE$Course_CrsGradeAwarded) %>% 
+  #group_by(crs_upper_HMCSE$Course_CrsGradeAwarded) %>% 
+  #mutate(grade.count = n()) %>% 
+  #slice(1)
+```
+
+```{r}
+#2nd
+gradeawarded <- crs_upper_HMCSE %>% count(Course_CrsGradeAwarded)
+gradeawarded_df <- as.data.frame(gradeawarded)
+gradeawarded_df
+```
+
+```{r}
+# another way to count data for only withdrawn
+library(data.table)
+data.table(crs_upper_HMCSE)[, (Course_CrsGradeAwarded = length(Course_CrsGradeAwarded)), by=Course_CrsDepartment]
+```
+
+
+```{r}
+#3rd wat
+library(sqldf)
+sqldf('select count(STU_ID) as STU_ID, Course_CrsGradeAwarded from crs_upper_HMCSE group by Course_CrsGradeAwarded')
+```
+
+
+```{r}
+# Export the dataset
+write.csv(crs_upper_HMCSE, "CRS_upper_HMCSE.csv")
+
+```
+
+
+```{r}
+# make 1 column for PASS and rest of the grade (pass= A to C , P, and S)
+crs_upper_HMCSE$PASS <- ifelse(Course_CrsGradeAwarded == "A-" |Course_CrsGradeAwarded == "A" |Course_CrsGradeAwarded == "B-" |
+                  Course_CrsGradeAwarded == "B" |Course_CrsGradeAwarded == "B+" |Course_CrsGradeAwarded == "C-" |
+                     Course_CrsGradeAwarded == "C" |Course_CrsGradeAwarded == "C+" |Course_CrsGradeAwarded=="P"|Course_CrsGradeAwarded=="S", "1","0") # 103 variables
+```
+
+```{r}
+# considering failing grade we only want to include the grades ( D to F, U, W, and D)
+# filter the failing = 0 dataset and manage them
+crs_pass <- filter(crs_upper_HMCSE, crs_upper_HMCSE$PASS== "1") #96582
+crs_fail <- filter(crs_upper_HMCSE, crs_upper_HMCSE$PASS == "0") #28452
+attach(crs_fail)
+crs_fail$Fail <- ifelse(Course_CrsGradeAwarded == "D" |Course_CrsGradeAwarded == "D+" |Course_CrsGradeAwarded == "F" |
+                     Course_CrsGradeAwarded == "U" |Course_CrsGradeAwarded == "W" |Course_CrsGradeAwarded=="NF", "Yes","No")
+
+# need to filter for DWF grades
+crs_dWf <- filter(crs_fail, crs_fail$Fail == "Yes") #16217
+
+# combine the PASS and DWF with same variables
+crs_dwf <- select(crs_dWf, -105)
+crs_dwf <- select(crs_dwf, -104)
+
+crs_PDWF_MCSE <- rbind(crs_pass, crs_dwf) ##112799
+
+# export the data DWF set as cvs file
+write.csv(crs_PDWF_MCSE, "crs_DWF_UPPER_HMCSE.csv")
+```
+
