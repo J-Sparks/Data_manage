@@ -60,10 +60,11 @@ apply(newFTIC_1stTerm_GPA, 2, p)#GPA_HIGHSCHOOL 38.95080
 GPAFTIC_1st_term_association <- newFTIC_1stTerm_GPA %>% 
   filter(Stu_Age <= 19) %>% #mean age == 18.55
   select(Gender="Stu_Gender",County="Stu_County",Ethnicity="Stu_Ethnicity",college="Stu_College",Stu_Department,
-         ResidenceHall="Stu_ResidenceHall",Stu_DivisionCode,Stu_MajorDesc,Stu_TotalUniversityHours="UniPriorhours",
-         Stu_TotalInstHours="UWFpriorhours",averageGPA1stFall,rankGPA1stFall,Stu_GPAGradePoints,GPA1stFall)
+         ResidenceHall="Stu_ResidenceHall",Stu_DivisionCode,Stu_MajorDesc,UniPriorhours="Stu_TotalUniversityHours",
+         UWFpriorhours="Stu_TotalInstHours",averageGPA1stFall,rankGPA1stFall,Stu_GPAGradePoints,GPA1stFall)
 
 
 xtabs(~GPAFTIC_1st_term_association$averageGPA1stFall)
 apply(GPAFTIC_1st_term_association, 2, p)
 write.csv(GPAFTIC_1st_term_association,"GPAFTIC_1st_term_association.csv")
+
