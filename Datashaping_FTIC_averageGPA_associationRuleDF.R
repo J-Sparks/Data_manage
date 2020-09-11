@@ -45,6 +45,12 @@ HsGPA <- metric4anon %>%
 #combine with hs gpa
 newFTIC_1stTerm_GPA <- merge(FTIC_1stTerm_ALL_select,HsGPA, by="STU_ID", all.x = TRUE);glimpse(newFTIC_1stTerm_GPA)
 
+library(mice)
+impute <- mice(newFTIC_1stTerm_GPA[, 49:51], m=3, seed = 1234 )
+GPAHS <- complete(impute, 3)
+
+newFTIC_1stTerm_GPA$GPAHS <- GPAHS
+
 #check NA
 p <- function(x){sum(is.na(x))/length(x)*100}
 apply(newFTIC_1stTerm_GPA, 2, p)#GPA_HIGHSCHOOL 38.95080 
@@ -61,7 +67,7 @@ GPAFTIC_1st_term_association <- newFTIC_1stTerm_GPA %>%
   filter(Stu_Age <= 19) %>% #mean age == 18.55
   select(Gender="Stu_Gender",County="Stu_County",Ethnicity="Stu_Ethnicity",college="Stu_College",Stu_Department,
          ResidenceHall="Stu_ResidenceHall",Stu_DivisionCode,Stu_MajorDesc,UniPriorhours="Stu_TotalUniversityHours",
-         UWFpriorhours="Stu_TotalInstHours",averageGPA1stFall,rankGPA1stFall,Stu_GPAGradePoints,GPA1stFall)
+         UWFpriorhours="Stu_TotalInstHours",GPAHS.GPA_HIGHSCHOOL,averageGPA1stFall,rankGPA1stFall,Stu_GPAGradePoints,GPA1stFall)
 
 
 xtabs(~GPAFTIC_1st_term_association$averageGPA1stFall)
