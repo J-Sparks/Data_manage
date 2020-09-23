@@ -1,0 +1,297 @@
+---
+title: "R CSE DATA analysis"
+output:
+  html_notebook: default
+  pdf_document: default
+  html_document:
+    df_print: paged
+  word_document: default
+---
+
+
+
+```{r}
+# import data : getwd Data_IR
+
+library(readr)
+CSEdata <- read_csv("CSEdata.csv")
+CRSCSEData <- read_csv("CRSCSEData.csv")
+```
+
+```{r}
+#CRSCSEdata need to shape wide data.frame using tidyr
+#970267457
+#outliers 20152016 200905 CGS3284 6657 12 I*
+glimpse(CRSCSEData)
+```
+```{r}
+library(Hmisc)
+Hmisc::describe(CRSCSEData) # choose credit hours from 1:4
+```
+```{R}
+library(tigerstats)
+barchartGC(~GRADE_AWARDED, data = CRSCSEData)
+
+```
+# Tier system
+```{r}
+library(tigerstats)
+barchartGC(~APPLICANT_TIER, data = CSEdata)
+```
+
+```{r}
+xtabs(~CSEdata$APPLICANT_TIER)
+```
+```{r}
+#by HIGH school
+library('data.table')
+df1 <- data.table( HSNAME = CSEdata$HIGH_SCHOOL_NAME)
+df1[,.(count = .N), by = HSNAME][, percent := prop.table(count)*100][order(-count),][]
+```
+```{r}
+#by county
+df2 <- data.table(County = CSEdata$COUNTY)
+df2[, .(count=.N), by=County][,percent := prop.table(count)*100][order(-count),][]
+```
+```{r}
+#by ethnicity
+df3 <- data.table(Cethnicity = CSEdata$ETHNICITY)
+df3[, .(count=.N),by=Cethnicity][,percent := prop.table(count)*100][order(-count),][]
+```
+
+```{r}
+hist(CSEdata$HOURS_BROUGHT_TO_UNIVERSITY)
+```
+```{r}
+#Hmisc::describe(CSEdata)
+glimpse(CSEdata)
+
+```
+
+```{r}
+mean(CSEdata$GPA_ENTERING_SECOND_FALL, na.rm=TRUE)#[1] 2.948828 ~2.95
+
+TierV1 <- CSEdata %>% 
+  select(COHORT_YEAR,ENTRY_COLLEGE,APPLICANT_TIER,GPA_ENTERING_SECOND_FALL,
+         HOURS_BROUGHT_TO_UNIVERSITY,APR,ENTRY_PROGRAM_CODE,ATTENDED_SECOND_FALL_TERM) %>% 
+  mutate(PriorInd=ifelse(HOURS_BROUGHT_TO_UNIVERSITY<=0,"InexpFTIC","ExpFTIC")) %>% 
+  mutate(aveGPAInd=ifelse(GPA_ENTERING_SECOND_FALL>=2.95,"above2.95","below2.95" )) 
+
+TierV2 <- TierV1[complete.cases(TierV1),]
+mean(TierV2$GPA_ENTERING_SECOND_FALL) #
+mean(TierV2$HOURS_BROUGHT_TO_UNIVERSITY) #
+```
+
+```{r}
+TierV2_T <- TierV2 %>% 
+  group_by(APPLICANT_TIER,aveGPAInd) %>% 
+ summarise(mean_GPA = mean(GPA_ENTERING_SECOND_FALL),meanPrir=mean(HOURS_BROUGHT_TO_UNIVERSITY),cFTIC=n(),.groups="drop")
+TierV2_T # showing tha tier 4:5 below GPA 3.0
+```
+```{r}
+TierV2_P <- TierV2 %>% 
+  group_by(PriorInd,COHORT_YEAR,aveGPAInd,ATTENDED_SECOND_FALL_TERM) %>% 
+ summarise(mean_GPA = mean(GPA_ENTERING_SECOND_FALL),meanPrir=mean(HOURS_BROUGHT_TO_UNIVERSITY),cFTIC=n(),.groups="drop")
+TierV2_P
+```
+
+
+```{r}
+# detect outlier GPA
+TierV2$APPLICANT_TIER <- as.factor(TierV2$APPLICANT_TIER)
+qplot(APPLICANT_TIER, GPA_ENTERING_SECOND_FALL, data=TierV2, geom=c("boxplot"),
+      fill=APPLICANT_TIER, main="First APR GPA UWF by Tier")
+```
+```{r}
+#Maximum and minimum
+boxplot.stats(TierV2$GPA_ENTERING_SECOND_FALL) #GPA is higher than 1st term gpa
+TierV2out <- boxplot.stats(TierV2$GPA_ENTERING_SECOND_FALL)$out
+max(TierV2out) #0.98
+min(TierV2out) #0.00
+```
+```{R}
+# remove outliers
+TierV2outliers <- TierV2 %>% 
+  filter(GPA_ENTERING_SECOND_FALL<=0.98)
+
+# for outliers
+TierV2_out <- TierV2outliers %>% 
+  group_by(APPLICANT_TIER) %>% 
+ summarise(mean_GPA = mean(GPA_ENTERING_SECOND_FALL),meanPrir=mean(HOURS_BROUGHT_TO_UNIVERSITY),cFTIC=n(),.groups="drop")
+TierV2_out
+
+```
+```{r}
+#detect outliers for piror hors
+qplot(APPLICANT_TIER, HOURS_BROUGHT_TO_UNIVERSITY, data=TierV2, geom=c("boxplot"),
+      fill=APPLICANT_TIER, main="Prior Hours UWF by Tier")
+```
+```{r}
+# prior hours outliers
+boxplot.stats(TierV2$HOURS_BROUGHT_TO_UNIVERSITY)
+TierV2outP <- boxplot.stats(TierV2$HOURS_BROUGHT_TO_UNIVERSITY)$out  
+max(TierV2outP) #100
+min(TierV2outP) #53
+```
+```{r}
+# Keep only not outliers
+TierV2outPliers <- TierV2 %>% 
+  filter(HOURS_BROUGHT_TO_UNIVERSITY < 53)
+
+# About Prior hours
+TierV2_outP <- TierV2outPliers %>% 
+  group_by(APPLICANT_TIER) %>% 
+ summarise(mean_GPA = mean(GPA_ENTERING_SECOND_FALL),meanPrir=mean(HOURS_BROUGHT_TO_UNIVERSITY),cFTIC=n(),.groups="drop")
+TierV2_outP
+```
+
+
+```{r}
+# remove outliers
+TierV2_rmOUT <- TierV2 %>% 
+  filter(GPA_ENTERING_SECOND_FALL > 0.98 & HOURS_BROUGHT_TO_UNIVERSITY <53) 
+Hmisc::describe(TierV2_rmOUT)
+```
+######################################################################################
+#### What is optimal values for above and below average GPA ? #############
+######################################################################################
+```{r}
+TierV1 <- CSEdata %>% 
+    mutate(PriorInd=ifelse(HOURS_BROUGHT_TO_UNIVERSITY<=0,"InexpFTIC","ExpFTIC")) %>% 
+  mutate(aveGPAInd=ifelse(GPA_ENTERING_SECOND_FALL>=2.77,"above2.77","below2.77" )) %>% 
+  filter(HOURS_BROUGHT_TO_UNIVERSITY<53) %>% 
+  filter(GPA_ENTERING_SECOND_FALL>0.98)
+
+TierV2 <- TierV1[complete.cases(TierV1),] #remove NAs
+
+
+
+TierV2_rmOUT_DT <- TierV2 %>% 
+  select(ENTRY_COLLEGE,APPLICANT_TIER,HOURS_BROUGHT_TO_UNIVERSITY,aveGPAInd)  
+  
+  TierV2_rmOUT_DT$ENTRY_COLLEGE <- as.factor(TierV2_rmOUT_DT$ENTRY_COLLEGE)
+#TierV2_rmOUT_DT$ENTRY_PROGRAM_CODE <- as.factor(TierV2_rmOUT_DT$ENTRY_PROGRAM_CODE)
+TierV2_rmOUT_DT$aveGPAInd <- as.factor(TierV2_rmOUT_DT$aveGPAInd);glimpse(TierV2_rmOUT_DT)
+
+
+
+# using decision tree
+# Data partition
+library(party)
+library(rpart)
+library(rpart.plot)
+library(caret)
+# Performs stratified random split of the data set
+TrainingIndex <- createDataPartition(TierV2_rmOUT_DT$aveGPAInd , p=0.8, list = FALSE)
+TrainingSet <- TierV2_rmOUT_DT[TrainingIndex,] # Training Set 677
+TestingSet <- TierV2_rmOUT_DT[-TrainingIndex,] # Test Set 166
+
+#model 01 include Year 4 factors
+treeTierPrior<- ctree(aveGPAInd ~ ., data=TrainingSet, controls = ctree_control(mincriterion = 0.9,minsplit = 10))
+treeTierPrior
+
+
+#par(xpd=TRUE)
+plot(treeTierPrior, compress=TRUE) # notice tier 2:5 have significant enter college and 2 and 3 at HMCSE
+#text(treeTierPrior, use.n=TRUE)
+
+
+#confusion matrix
+library(caret)
+library(e1071)
+confusionMatrix(predict(treeTierPrior), TrainingSet$aveGPAInd)
+
+```
+########################################################################################################################
+#### What is optimal values Tier system vs.Department/programs about above and below average GPA @ HMCSE   #############
+########################################################################################################################
+```{r}
+
+#find average GPA for HMCSE
+
+GPA_TIER4to5 <- TierV2 %>% 
+  filter(APPLICANT_TIER == 4:5) #%>%
+  #group_by(ETHNICITY) %>% 
+  #summarise(aveGPA=mean(GPA_ENTERING_SECOND_FALL), CFTIC=n(), .groups="drop")
+mean(GPA_HMCSE$GPA_ENTERING_SECOND_FALL, na.rm=TRUE)#2.908156
+mean(GPA_HMCSE$HOURS_BROUGHT_TO_UNIVERSITY)
+
+
+
+TierV2_rmOUT_DTHMCSE <- GPA_TIER4to5 %>% 
+        #filter(ENTRY_COLLEGE=="HMCSE") %>% # 1,929
+        #filter(HOURS_BROUGHT_TO_UNIVERSITY < 53) %>% 
+        #filter(GPA_ENTERING_SECOND_FALL > 0.98) %>% 
+        #filter(APPLICANT_TIER>=3) %>%  # only inlcuded tier 3:5
+        filter(ETHNICITY=="African American"
+               |ETHNICITY=="Non-Resident Alien"
+               |ETHNICITY=="Asian"
+               |ETHNICITY=="Hispanic"
+               |ETHNICITY=="Two or More"
+               |ETHNICITY=="White") %>% 
+        #mutate(aveGPAInd=ifelse(GPA_ENTERING_SECOND_FALL>=2.95,"above2.95","below2.95"))%>% 
+        select(#APPLICANT_TIER,
+          #FIRST_GENERATION_STUDENT,
+          #FIRST_FALL_PELL_AMOUNT,
+          FIRST_FALL_ANY_LOANS,
+          #AGE_AT_ENTRY,
+          #GENDER,
+          AP_CREDITS,
+          #COUNTY,
+          #ETHNICITY,
+          HOURS_BROUGHT_TO_UNIVERSITY,
+          ENTRY_DEPARTMENT,
+          ENTRY_PROGRAM,
+          aveGPAInd) ;glimpse(TierV2_rmOUT_DTHMCSE)
+ 
+Hmisc::describe(TierV2_rmOUT_DTHMCSE)
+
+#TierV2_rmOUT_DTHMCSE$FIRST_GENERATION_STUDENT <- as.factor(TierV2_rmOUT_DTHMCSE$FIRST_GENERATION_STUDENT)
+TierV2_rmOUT_DTHMCSE$FIRST_FALL_ANY_LOANS <- as.factor(TierV2_rmOUT_DTHMCSE$FIRST_FALL_ANY_LOANS)
+#TierV2_rmOUT_DTHMCSE$GENDER <- as.factor(TierV2_rmOUT_DTHMCSE$GENDER)
+#TierV2_rmOUT_DTHMCSE$FIRST_FALL_PELL_AMOUNT <- as.factor(TierV2_rmOUT_DTHMCSE$FIRST_FALL_PELL_AMOUNT)
+TierV2_rmOUT_DTHMCSE$ENTRY_PROGRAM <- as.factor(TierV2_rmOUT_DTHMCSE$ENTRY_PROGRAM)
+#TierV2_rmOUT_DTHMCSE$ETHNICITY <- as.factor(TierV2_rmOUT_DTHMCSE$ETHNICITY)
+#TierV2_rmOUT_DTHMCSE$COUNTY <- as.factor(TierV2_rmOUT_DTHMCSE$COUNTY)
+TierV2_rmOUT_DTHMCSE$ENTRY_DEPARTMENT <- as.factor(TierV2_rmOUT_DTHMCSE$ENTRY_DEPARTMENT)
+
+TierV2_rmOUT_DTHMCSE$aveGPAInd <- as.factor(TierV2_rmOUT_DTHMCSE$aveGPAInd);glimpse(TierV2_rmOUT_DTHMCSE)
+
+
+
+# using decision tree
+# Data partition
+library(party)
+library(rpart)
+library(rpart.plot)
+library(caret)
+# Performs stratified random split of the data set
+TrainingIndex <- createDataPartition(TierV2_rmOUT_DTHMCSE$aveGPAInd , p=0.8, list = FALSE)
+TrainingSet <- TierV2_rmOUT_DTHMCSE[TrainingIndex,] # Training Set 677
+TestingSet <- TierV2_rmOUT_DTHMCSE[-TrainingIndex,] # Test Set 166
+
+#model 01 include Year 4 factors
+treeTierPriorHMCSE<- ctree(aveGPAInd ~ ., data=TrainingSet, controls = ctree_control(mincriterion = 0.9,minsplit = 10))
+treeTierPriorHMCSE
+
+
+#par(xpd=TRUE)
+plot(treeTierPriorHMCSE, compress=TRUE)
+#text(treeTierPrior, use.n=TRUE)
+
+
+#confusion matrix
+library(caret)
+library(e1071)
+confusionMatrix(predict(treeTierPriorHMCSE), TrainingSet$aveGPAInd)
+
+```
+
+###################################################################################################################################
+#### What is optimal values Tier 3  vs.Department/programs/other features about above and below average GPA @ HMCSE   #############
+###################################################################################################################################
+
+
+
+
+
