@@ -1,0 +1,415 @@
+---
+title: " Crosstabs & summary & ggplot"
+output: html_notebook
+---
+```{r}
+library(readr)
+FTIC_1stTerm_ALL <- read_csv("FTIC_1stTerm_ALL.csv", 
+    col_types = cols(X1 = col_skip()))
+glimpse(FTIC_1stTerm_ALL)
+```
+
+```{r}
+# crosstbs for cohort and college
+xtabs(~FTIC_1stTerm_ALL$Stu_College+FTIC_1stTerm_ALL$Cohort)
+```
+
+
+```{r}
+# Create prob.table 
+prob.by.cohort <- with(FTIC_1stTerm_ALL, table(Cohort, Stu_College))
+prob.by.cohort <- prop.table(prob.by.cohort, margin = 1) #margin=1 total by row
+prob.by.cohort
+
+```
+
+```{r}
+
+FTIC_1stFallTermDF <- FTIC_1stTerm_ALL %>% 
+  select(Cohort,Stu_Gender,Stu_Gender,Stu_MajorDesc,Stu_Ethnicity,Stu_County,
+         Stu_State,Stu_Nation,Stu_College,Stu_Department,Stu_CurrentTermLoad,
+         "PriorHrs"=Stu_TotalUniversityHours,Stu_TotalInstHours,Stu_TotalInstGradePoints,
+         contains("GPA"),contains("Test")) %>% 
+         mutate(GPA1stFall=Stu_GPAGradePoints/Stu_GPATermHours) %>% 
+  mutate(DWFHrs = Stu_CurrentTermLoad - Stu_GPATermHours )
+
+FTIC_1stFallTerm <- select(FTIC_1stFallTermDF,-19);glimpse(FTIC_1stFallTerm)#repeat for 20variables
+
+```
+
+```{r}
+attach(FTIC_1stFallTerm)
+#na GPA to zero values
+UPGPA1stFall <- FTIC_1stFallTerm$GPA1stFall
+UPGPA1stFall[is.na(UPGPA1stFall)] <- 0
+FTIC_1stFallTerm$GPA1stFall <- UPGPA1stFall
+glimpse(FTIC_1stFallTerm)
+```
+
+```{r}
+
+
+library(mice)
+library(VIM)
+
+
+
+p <- function(x){sum(is.na(x))/length(x)*100}
+apply(FTIC_1stFallTerm, 2, p)
+
+#plot 
+md.pattern(FTIC_1stFallTerm)
+#showing missing rows and counts
+md.pairs(FTIC_1stFallTerm)
+
+```
+
+```{r}
+
+
+FTIC_Cohort_GPA <- FTIC_1stFallTerm %>% 
+  group_by(Cohort) %>% 
+ summarise(mean_Fall_GPA = mean(GPA1stFall))
+head(FTIC_Cohort_GPA)
+
+  
+           
+```
+
+```{r}
+library(ggplot2)
+# Plot the graph
+ggplot(FTIC_Cohort_GPA, aes(x = Cohort, y = mean_Fall_GPA)) +
+    geom_line() +
+    theme_classic() +
+    labs(
+        x = "Cohort",
+        y = "Average GPA 1st Fall",
+        title = paste(
+            "Average GPA First Fall Term at UWF"
+        )
+    )
+```
+
+```{r}
+FTIC_CohortColl_GPA <- FTIC_1stFallTerm %>% 
+  group_by(Stu_College,Cohort) %>% 
+ summarise(mean_Fall_GPA = mean(GPA1stFall))
+FTIC_CohortColl_GPA
+
+```
+
+```{r}
+FTIC_CohortColleth_GPA <- FTIC_1stFallTerm %>% 
+  group_by(Stu_Ethnicity,Cohort) %>% 
+ summarise(mean_Fall_GPA = mean(GPA1stFall))
+FTIC_CohortColleth_GPA
+```
+
+
+```{r}
+# Plot the graph by Ethnicity UWF
+ggplot(FTIC_CohortColleth_GPA, aes(x = Cohort, y = mean_Fall_GPA, col=Stu_Ethnicity)) +
+    geom_line(size=1.5) +
+    theme_classic() +
+    labs(
+        x = "Cohort",
+        y = "Average GPA 1st Fall",
+        title = paste(
+            "Average GPA First Fall Term at UWF"
+        )
+    )
+```
+########################################
+######## Prior hours == 0 ##############
+########################################
+
+
+
+```{r}
+qplot(FTIC_1stFallTerm$PriorHrs) #group for prior hours ==0
+```
+```{r}
+FTIC_prior_0 <- subset(FTIC_1stFallTerm, FTIC_1stFallTerm$PriorHrs<= 0)#1616
+xtabs(~FTIC_prior_0$Stu_Ethnicity)
+```
+```{r}
+FTIC_prior_GPA <- FTIC_prior_0 %>% 
+  group_by(Stu_Ethnicity,Cohort) %>% 
+ summarise(mean_Fall_GPA = mean(GPA1stFall))
+FTIC_prior_GPA
+# Plot the graph by Ethnicity UWF
+ggplot(FTIC_prior_GPA, aes(x = Cohort, y = mean_Fall_GPA, col=Stu_Ethnicity)) +
+    geom_line(size=1.5) +
+    theme_classic() +
+    labs(
+        x = "Cohort",
+        y = "Average GPA 1st Fall",
+        title = paste(
+            "Average GPA First Fall Term at UWF"
+        )
+    )
+```
+```{r}
+
+```
+
+
+
+```{r}
+qplot(Stu_Ethnicity, GPA1stFall, data=FTIC_prior_0, geom=c("boxplot"),
+      fill=Stu_Ethnicity, main="First Fall term GPA UWF by Ethnicity")
+```
+```{r}
+qplot(Stu_Ethnicity,Stu_GPATermHours, data=FTIC_prior_0,geom = "boxplot",
+      fill=Stu_Ethnicity, main="First Fall Term Total grade point by Ethnicity")
+```
+
+
+```{r}
+ggplot(data=FTIC_prior_0, aes(x=GPA1stFall))+geom_histogram(aes(fill=Stu_Ethnicity), color="Black",bins=20)
+```
+
+
+```{r}
+ggplot(data=FTIC_prior_0, aes(x=GPA1stFall))+geom_histogram(aes(fill=Stu_College), color="Black",bins=20)
+```
+```{r}
+## group for HMCSE
+
+FTIC_prior_0_HMCSE <- subset(FTIC_prior_0, FTIC_prior_0$Stu_College=="Science and Engineering")
+xtabs(~FTIC_prior_0_HMCSE$Stu_Department)
+```
+
+```{r}
+FTICHMCSEbyDeprt <- FTIC_prior_0_HMCSE %>% 
+  group_by(Stu_Department, Cohort) %>% 
+  summarise(meanGPA = mean(GPA1stFall));FTICHMCSEbyDeprt
+ggplot(data=FTIC_prior_0_HMCSE, aes(x=GPA1stFall))+geom_histogram(aes(fill=Stu_Department), color="Black",bins=20)
+```
+
+```{r}
+FTIC_prior_0_HMCSEdf <- FTIC_prior_0_HMCSE %>% 
+  group_by(Stu_Department,Cohort) %>% 
+ summarise(mean_Fall_GPA = mean(GPA1stFall))
+FTIC_prior_0_HMCSEdf
+# Plot the graph by Ethnicity UWF
+ggplot(FTIC_prior_0_HMCSEdf, aes(x = Cohort, y = mean_Fall_GPA, col=Stu_Department)) +
+    geom_line(size=1.5) +
+    theme_classic() +
+    labs(
+        x = "Cohort",
+        y = "Average GPA 1st Fall",
+        title = paste(
+            "Average GPA First Fall Term at HMCSE - Prior Hours = 0"
+        )
+    )
+```
+
+```{r}
+FTICHMCSEbyEthnicity <- FTIC_prior_0_HMCSE %>% 
+  group_by(Stu_Ethnicity, Cohort) %>% 
+  summarise(meanGPA = mean(GPA1stFall));FTICHMCSEbyEthnicity
+ggplot(data=FTIC_prior_0_HMCSE, aes(x=GPA1stFall))+geom_histogram(aes(fill=Stu_Ethnicity), color="Black",bins=20)
+```
+```{r}
+# Plot the graph by Ethnicity UWF
+
+ggplot(FTICHMCSEbyEthnicity, aes(x = Cohort, y = meanGPA, col=Stu_Ethnicity)) +
+    geom_line(size=1.5) +
+    theme_classic() +
+    labs(
+        x = "Cohort",
+        y = "Average GPA 1st Fall HMCSE",
+        title = paste(
+            "Average GPA First Fall Term at HMCSE"
+        )
+    )
+```
+```{r}
+qplot(FTIC_prior_0_HMCSE$GPA1stFall)
+```
+###########################
+#### summary using "dplyr" #####
+##########################
+```{r}
+FTIC_prior_0_HMCSE_under2.0GPA <- FTIC_prior_0_HMCSE %>% 
+  filter(GPA1stFall < 2.0) %>% 
+  group_by(Stu_Ethnicity) %>% 
+  summarise(meanGPA = mean(GPA1stFall), nEthnicity=n());FTIC_prior_0_HMCSE_under2.0GPA
+```
+```{r}
+FTIC_prior_0_HMCSEdf <- FTIC_prior_0_HMCSE %>% 
+  group_by(Stu_Department,Cohort) %>% 
+ summarise(mean_Fall_GPA = mean(GPA1stFall))
+FTIC_prior_0_HMCSEdf
+# Plot the graph by Ethnicity UWF
+ggplot(FTIC_prior_0_HMCSEdf, aes(x = Cohort, y = mean_Fall_GPA, col=Stu_Department)) +
+    geom_line(size=1.5) +
+    theme_classic() +
+    labs(
+        x = "Cohort",
+        y = "Average GPA 1st Fall",
+        title = paste(
+            "Average GPA First Fall Term at HMCSE - Prior Hours = 0"
+        )
+    )
+```
+########################################
+######## Prior hours!= 0 ##############
+########################################
+
+```{r}
+
+FTIC_prior_not_0 <- FTIC_1stFallTerm %>% 
+  filter(Stu_College == "Science and Engineering" & PriorHrs > 0) 
+
+xtabs(~FTIC_prior_not_0$Stu_Department)
+```
+```{r}
+FTICHMCSEbyDeprtNOT <- FTIC_prior_not_0 %>% 
+  group_by(Stu_Department, Cohort) %>% 
+  summarise(meanGPA = mean(GPA1stFall));FTICHMCSEbyDeprtNOT
+ggplot(data=FTIC_prior_not_0, aes(x=GPA1stFall))+geom_histogram(aes(fill=Stu_Department), color="Black",bins=20)
+```
+
+
+```{r}
+FTIC_prior_not_0 <- FTIC_1stFallTerm %>% 
+  filter(Stu_College == "Science and Engineering" & PriorHrs > 0) 
+
+xtabs(~FTIC_prior_not_0$Stu_Ethnicity)
+```
+```{r}
+FTIC_priornot_GPA <- FTIC_prior_not_0 %>% 
+  group_by(Stu_Ethnicity,Cohort) %>% 
+ summarise(mean_Fall_GPA = mean(GPA1stFall))
+FTIC_priornot_GPA
+# Plot the graph by Ethnicity UWF
+ggplot(FTIC_priornot_GPA, aes(x = Cohort, y = mean_Fall_GPA, col=Stu_Ethnicity)) +
+    geom_line(size=1.5) +
+    theme_classic() +
+    labs(
+        x = "Cohort",
+        y = "Average GPA 1st Fall",
+        title = paste(
+            "Average GPA First Fall Term at HMCSE"
+        )
+    )
+```
+
+```{r}
+FTIC_priornot_GPA <- FTIC_prior_not_0 %>% 
+  group_by(Stu_Department,Cohort) %>% 
+ summarise(mean_Fall_GPA = mean(GPA1stFall))
+FTIC_priornot_GPA
+# Plot the graph by Ethnicity UWF
+ggplot(FTIC_priornot_GPA, aes(x = Cohort, y = mean_Fall_GPA, col=Stu_Department)) +
+    geom_line(size=1.5) +
+    theme_classic() +
+    labs(
+        x = "Cohort",
+        y = "Average GPA 1st Fall",
+        title = paste(
+            "Average GPA First Fall Term at HMCSE - Prior Hours > 0"
+        )
+    )
+```
+```{r}
+FTIClessthan2.0 <- FTIC_1stFallTermDF %>% 
+  filter(GPA1stFall < 2.0)
+hist(FTIClessthan2.0$Stu_GPAHighSchool,xlim=c(0,4))
+```
+```{r}
+FTICgreaterthan2.0 <- FTIC_1stFallTermDF %>% 
+  filter(GPA1stFall >= 2.0)
+hist(FTICgreaterthan2.0$Stu_GPAHighSchool, xlim = c(0,4))
+```
+###############################
+###FTIC_1stTerm_ALL_select#####
+###############################
+```{r}
+glimpse(FTIC_1stTerm_ALL_select)
+```
+
+```{r}
+xtabs(~FTIC_1stTerm_ALL_select$Cohort)
+```
+```{r}
+hist(FTIC_1stTerm_ALL_select$GPA1stFall)
+```
+```{r}
+#coding for GPA1stFall
+FTIC_1stTerm_ALL_select$rankGPA1stFall <- ifelse(FTIC_1stTerm_ALL_select$GPA1stFall<1.0,"under1.0",
+                                                 ifelse(FTIC_1stTerm_ALL_select$GPA1stFall<1.5,"under1.5",
+                                                        ifelse(FTIC_1stTerm_ALL_select$GPA1stFall<2.0,"under2.0","above2.0")))
+xtabs(~FTIC_1stTerm_ALL_select$rankGPA1stFall)
+```
+```{r}
+xtabs(~FTIC_1stTerm_ALL_select$Cohort)
+```
+```{r}
+sum(910)/1050
+921/1098
+907/1074
+992/1283
+975/1328
+```
+
+```{r}
+xtabs(~FTIC_1stTerm_ALL_select$rankGPA1stFall+FTIC_1stTerm_ALL_select$Cohort)
+```
+```{r}
+xtabs(~FTIC_1stTerm_ALL_select$rankGPA1stFall+FTIC_1stTerm_ALL_select$Stu_College)
+```
+```{r}
+
+```
+
+```{r}
+xtabs(~FTIC_1stTerm_ALL_select$Cohort+FTIC_1stTerm_ALL_select$Stu_College)
+```
+```{r}
+85/104  #SEPS
+114/125 #CASHH
+121/145 #BOC
+158/184 #health
+367/427 #HMCSE
+```
+
+```{r}
+xtabs(~FTIC_1stTerm_ALL_select$rankGPA1stFall+FTIC_1stTerm_ALL_select$Stu_College+FTIC_1stTerm_ALL_select$Cohort)
+
+```
+```{r}
+write.csv(FTIC_1stTerm_ALL_select,"FTIC_1stTermDF.csv")
+```
+```{r}
+glimpse(FTIC_1stTerm_ALL_select
+        )
+```
+```{r}
+FTIC_1st <- FTIC_1stTerm_ALL_select %>% 
+  select(1:13,"Stu_GPATermHours","Stu_GPAGradePoints",28:37);glimpse(FTIC_1st)
+```
+#################################
+### FTIC 2nd semester ###########
+###########################3#####
+```{r}
+glimpse(rankFTIC_Fall_Spring_GPA)
+```
+############################
+## scatter plot Matrix #####
+############################
+```{r}
+library(ggplot2)
+library(tidyverse)
+library(GGally)
+
+
+GPA <- rankFTIC_Fall_Spring_GPA %>% 
+  mutate(rankGPA1stFall = as.factor(rankGPA1stFall)) %>% 
+  ggpairs(columns = c("Stu_GPAGradePoints.x","Stu_GPAHighSchool.x","Stu_GPATermHours.x","rankGPA1stFall"),
+          aes(color=rankGPA1stFall))
+```
+
