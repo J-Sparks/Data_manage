@@ -268,7 +268,8 @@ CrsComFticDrop0 <- merge(CrsComFticDrop0,BSC2010,by="STU_ID", all.x= TRUE  )
 CrsComFticDrop0 <- merge(CrsComFticDrop0,BSC2844,by="STU_ID", all.x= TRUE  )
 CrsComFticDrop0 <- merge(CrsComFticDrop0,PSY2012,by="STU_ID", all.x= TRUE  )
 # replace NA to Others
-CrsComFticDrop0[is.na(CrsComFticDrop0)] = "Others"
+data.frame(CrsComFticDrop0, stringAsFactors=FALSE)
+CrsComFticDrop0[is.na(CrsComFticDrop0)] <- "Others"
 #some duplicated data
 CrsComFticDrop1 <- CrsComFticDrop0[!duplicated(CrsComFticDrop0$STU_ID), ]
 summary(CrsComFticDrop1)
