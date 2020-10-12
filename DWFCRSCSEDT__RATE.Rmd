@@ -1,0 +1,101 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+###########################################################
+#### DataShaping_FREQUENCY COURSE NAME 1st Fall DWF  ######
+###########################################################
+
+
+
+updated1CRSCSEData <- read.csv("~/Data_IR/CRSCSEData.csv", stringsAsFactors=TRUE)
+#glimpse(updated1CRSCSEData)
+
+
+detach(package:plyr)
+library(dplyr)
+
+##########################################################################
+### arrange freq courses in r ############################################
+#########################################################################
+
+DWFCRSCSE <- updated1CRSCSEData %>% 
+  group_by(UNIV_ROW_ID) %>% 
+  filter(DEMO_TIME_FRAME == 201208 | DEMO_TIME_FRAME == 201308 | DEMO_TIME_FRAME == 201408 | 
+           DEMO_TIME_FRAME == 201508 | DEMO_TIME_FRAME == 201608 | DEMO_TIME_FRAME == 201708 | 
+           DEMO_TIME_FRAME == 201808 | DEMO_TIME_FRAME == 201908 ) %>%  # choose for Fall term 
+  filter(DEMO_TIME_FRAME == min(DEMO_TIME_FRAME), .by_group=TRUE) %>% 
+  mutate(Numcrs = row_number());unique(DWFCRSCSE$Numcrs) #[1] 1 2 3 4 5 6 7 8 9
+
+
+length(unique(DWFCRSCSE$COURSE_NAME)) #[1] 466
+unique(DWFCRSCSE$Numcrs) #[1] 1 2 3 4 5 6 7 8 9
+
+#########################################
+######## group by freq. ################
+####################################
+
+DWFCRSCSEDT <- DWFCRSCSE %>% 
+  group_by(COURSE_NAME) %>%
+  summarise(Freq=n()) %>% 
+  ungroup() %>% 
+  arrange(-Freq)
+DWFCRSCSEDT <- as.data.frame(DWFCRSCSEDT) # frequency Table
+
+DWFCRSCSEDTname <- merge(DWFCRSCSE, DWFCRSCSEDT, by="COURSE_NAME", all.x=TRUE)
+# for DWF counts
+DWFCRSCSEDTname$DWF <- ifelse(DWFCRSCSEDTname$GRADE_AWARDED   =="A"|DWFCRSCSEDTname$GRADE_AWARDED   =="A-"|
+                                                   DWFCRSCSEDTname$GRADE_AWARDED   =="B+"|DWFCRSCSEDTname$GRADE_AWARDED   =="B-"|
+                                                  DWFCRSCSEDTname$GRADE_AWARDED   =="B"|DWFCRSCSEDTname$GRADE_AWARDED   =="C"|
+                                                   DWFCRSCSEDTname$GRADE_AWARDED   =="C+"|DWFCRSCSEDTname$GRADE_AWARDED   =="C-"|DWFCRSCSEDTname$GRADE_AWARDED   =="XX"|DWFCRSCSEDTname$GRADE_AWARDED   =="P"|DWFCRSCSEDTname$GRADE_AWARDED   =="S","PASS","FAIL")
+# for Pass counts
+DWFCRSCSEDTname$PASS <- ifelse(DWFCRSCSEDTname$GRADE_AWARDED   =="A"|DWFCRSCSEDTname$GRADE_AWARDED   =="A-"|
+                                                   DWFCRSCSEDTname$GRADE_AWARDED   =="B+"|DWFCRSCSEDTname$GRADE_AWARDED   =="B-"|
+                                                  DWFCRSCSEDTname$GRADE_AWARDED   =="B"|DWFCRSCSEDTname$GRADE_AWARDED   =="C"|
+                                                   DWFCRSCSEDTname$GRADE_AWARDED   =="C+"|DWFCRSCSEDTname$GRADE_AWARDED   =="C-"|DWFCRSCSEDTname$GRADE_AWARDED   =="XX"|DWFCRSCSEDTname$GRADE_AWARDED   =="P"|DWFCRSCSEDTname$GRADE_AWARDED   =="S",1,0)
+
+
+colnames(DWFCRSCSEDTname)
+write.csv(DWFCRSCSEDTname, "DWFCRSCSEDTname.csv")
+```
+
+```{r}
+# find distinct name and keep all variables
+
+DWFUniq.DTname <-  DWFCRSCSEDTname %>% 
+  arrange(-Freq) %>% 
+ distinct(COURSE_NAME, .keep_all = TRUE );DWFUniq.DTname
+
+```
+
+```{r}
+# how to find DWF Rate
+
+DWFCRSCSEDTnameRate <- DWFCRSCSEDTname %>% 
+ # select(COURSE_NAME,GRADE_AWARDED,Freq,DWF,PASS) %>% 
+  group_by(DWF,COURSE_NAME) %>% 
+  summarise(Freq=n()) %>% 
+  ungroup() %>% 
+  arrange(-Freq);DWFCRSCSEDTnameRate
+
+  DWFCRSNAME <- merge(DWFUniq.DTname, DWFCRSCSEDTnameRate, by="COURSE_NAME", all.x=TRUE );glimpse(DWFCRSNAME)
+  # data frame for DWF
+  DWFCRSNAMEre <- DWFCRSNAME %>% 
+    select(COURSE_NAME,"TotalFreq"="Freq.x", PASS, "DWF"= DWF.y, "PassFaillFreq"=Freq.y ) %>% 
+    mutate(Rate = PassFaillFreq*100/TotalFreq ) %>% 
+    arrange(-TotalFreq);glimpse(DWFCRSNAMEre)
+  
+  write.csv(DWFCRSNAMEre, "ppt_DWFRATECRSNAME.csv")
+
+```
+
+```{r}
+
+```
+
