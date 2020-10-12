@@ -6,7 +6,7 @@ output: html_notebook
 library(readr)
 FTIC_1stTerm_ALL <- read_csv("FTIC_1stTerm_ALL.csv", 
     col_types = cols(X1 = col_skip()))
-glimpse(FTIC_1stTerm_ALL)
+#glimpse(FTIC_1stTerm_ALL)
 ```
 
 ```{r}
@@ -33,7 +33,7 @@ FTIC_1stFallTermDF <- FTIC_1stTerm_ALL %>%
          mutate(GPA1stFall=Stu_GPAGradePoints/Stu_GPATermHours) %>% 
   mutate(DWFHrs = Stu_CurrentTermLoad - Stu_GPATermHours )
 
-FTIC_1stFallTerm <- select(FTIC_1stFallTermDF,-19);glimpse(FTIC_1stFallTerm)#repeat for 20variables
+FTIC_1stFallTerm <- select(FTIC_1stFallTermDF,-19)#;glimpse(FTIC_1stFallTerm)#repeat for 20variables
 
 ```
 
@@ -43,7 +43,7 @@ attach(FTIC_1stFallTerm)
 UPGPA1stFall <- FTIC_1stFallTerm$GPA1stFall
 UPGPA1stFall[is.na(UPGPA1stFall)] <- 0
 FTIC_1stFallTerm$GPA1stFall <- UPGPA1stFall
-glimpse(FTIC_1stFallTerm)
+#glimpse(FTIC_1stFallTerm)
 ```
 
 ```{r}
@@ -68,8 +68,8 @@ md.pairs(FTIC_1stFallTerm)
 
 
 FTIC_Cohort_GPA <- FTIC_1stFallTerm %>% 
-  group_by(Cohort) %>% 
- summarise(mean_Fall_GPA = mean(GPA1stFall))
+  group_by(Cohort, Stu_Gender, Stu_Ethnicity) %>% 
+ summarise(mean_Fall_GPA = mean(GPA1stFall), mean_Fall_hrs=mean(Stu_GPATermHours))
 head(FTIC_Cohort_GPA)
 
   
@@ -229,15 +229,16 @@ ggplot(FTICHMCSEbyEthnicity, aes(x = Cohort, y = meanGPA, col=Stu_Ethnicity)) +
 ```{r}
 qplot(FTIC_prior_0_HMCSE$GPA1stFall)
 ```
-###########################
+################################
 #### summary using "dplyr" #####
-##########################
+###############################
 ```{r}
 FTIC_prior_0_HMCSE_under2.0GPA <- FTIC_prior_0_HMCSE %>% 
   filter(GPA1stFall < 2.0) %>% 
   group_by(Stu_Ethnicity) %>% 
   summarise(meanGPA = mean(GPA1stFall), nEthnicity=n());FTIC_prior_0_HMCSE_under2.0GPA
 ```
+
 ```{r}
 FTIC_prior_0_HMCSEdf <- FTIC_prior_0_HMCSE %>% 
   group_by(Stu_Department,Cohort) %>% 
@@ -412,4 +413,168 @@ GPA <- rankFTIC_Fall_Spring_GPA %>%
   ggpairs(columns = c("Stu_GPAGradePoints.x","Stu_GPAHighSchool.x","Stu_GPATermHours.x","rankGPA1stFall"),
           aes(color=rankGPA1stFall))
 ```
+
+```{r}
+V2wide_AllCSECRS_data %>% 
+  select(HOURS_BROUGHT_TO_UNIVERSITY, FIRST_FALL_PELL_AMOUNT, FIRST_FALL_BRIGHT_FUTURES_AMOUNT) %>% 
+  gather(metric, value) %>% 
+  ggplot(aes(value, fill = metric)) + 
+  geom_density(show.legend = FALSE) + 
+  facet_wrap(~ metric, scales = "free")
+```
+
+
+```{r}
+# ggplot with Tiers and 1st Fall GPA 
+myGPAdata <- V1FreqOrderwith9crs_MASTER_CRSCSE_allcourse_tier
+myGPAdata$APPLICANT_TIER <- factor(myGPAdata$APPLICANT_TIER)
+gg1 <- ggplot(data = myGPAdata, aes(x=X, y= FIRST_FALL_GPA))+
+  geom_point(aes(color=APPLICANT_TIER))+labs(x= "Data points", y="First Fall GPA", title="Scatter Plot", subtitle = "FTIC 2015-2019")
+
+gg1+scale_color_manual(breaks=c("1","2","3","4","5"),values = c("blue", "green", "yellow","pink","red"))
+gg1+scale_color_brewer(palette = "Paired")
+install.packages("wesanderson")
+library(wesanderson)
+#gg1+scale_color_manual(values=wes_palette(n=5, name="GrandBudapest"))
+gg1+scale_colour_gradientn(colours=rainbow(5))
+
+gg2 <- ggplot(data=myGPAdata, aes(x= AP_CREDITS))+geom_density(aes(fill=aveGPAInd ))#
+gg2
+```
+```{r}
+qplot(AP_CREDITS, data=myGPAdata,geom = "histogram", fill=aveGPAInd, bins=10)
+qplot(HOURS_BROUGHT_TO_UNIVERSITY, data=myGPAdata,geom = "histogram", fill=aveGPAInd, bins=10)
+
+```
+
+
+
+```{r}
+
+ggHS+scale_color_manual(breaks=c("1","2","3","4","5"),values = c("blue", "green", "yellow","pink","red"))
+
+```
+```{r}
+library(ggplot2)
+rowresultsV3$rowN <- seq.int(nrow(rowresultsV3))
+
+glimpse(rowresultsV3)
+```
+```{r}
+#scatter plot using qplot() function
+rowresultsV3$APPLICANT_TIER <- factor(rowresultsV3$APPLICANT_TIER)
+qplot(FIRST_FALL_GPA,AboveGPA, data = rowresultsV3, geom = "point")
+qplot(FIRST_FALL_GPA,AboveGPA, data = rowresultsV3, geom = "point", color=APPLICANT_TIER, shape=APPLICANT_TIER, xlab = "First Fall GPA", ylab = "Probability of Above GPA %",
+      main="Who is more likely to be above or Below average GPA", label=aveGPAInd)
+
+```
+```{r}
+#bar plot using qplot() function
+
+qplot(AP_CREDITS, data=rowresultsV3, geom="bar", color=I("lightblue"), fill=I("darkblue"),xlab = "AP Credit Hours", ylab = "Frequency", main = "How many AP Credit hours?")+
+  scale_x_continuous(breaks = 1:10) # not easy with multi factors to show using qplot for scatter plot or dotplot
+
+```
+```{r}
+#plot ggplot
+ggplot(rowresultsV3, aes(AP_CREDITS))+geom_histogram(aes(fill=APPLICANT_TIER), color=I("White"), bin=30)# same as qplot using bin for histogram
+ggplot(rowresultsV3, aes(x=AboveGPA))+geom_histogram(aes(fill=APPLICANT_TIER), color=I("white")) # to fill color on factors use aes fill= no ""
+
+ggplot(rowresultsV3, aes(x=APPLICANT_TIER))+geom_bar(aes(fill=APPLICANT_TIER), color=I("white")) # by factor level bar graph
+ggplot(rowresultsV3, aes(x=FIRST_FALL_GPA, y=AboveGPA))+geom_point(aes(color=APPLICANT_TIER)) # for the point don't  use fill just color comment
+ggplot(rowresultsV3, aes(x=HOURS_BROUGHT_TO_UNIVERSITY, y=AP_CREDITS , color=AboveGPA))+geom_point() +ggtitle("UWF Probability of Above Average GPA")+
+  xlab("Prior credit hours")+ylab("AP credit hours")
+```
+
+```{r}
+myTierdata <- V1FreqOrderwith9crs_MASTER_CRSCSE_allcourse_tier
+TiersDG <- myTierdata %>% 
+  group_by(COHORT_YEAR,ENTRY_COLLEGE) %>% 
+  summarise(meanHSGPA = mean(GPA_HIGHSCHOOL, na.rm=TRUE), .groups="drop")
+            #, meanAP = mean(AP_CREDITS,na.rm=TRUE), meanPrior=mean(HOURS_BROUGHT_TO_UNIVERSITY,na.rm=TRUE),cFTIC=n(), groups="drop")
+TiersDG
+ggplot(TiersDG, aes(x = COHORT_YEAR, y = meanHSGPA, col=ENTRY_COLLEGE)) +
+    geom_point(size=5) +
+     theme_classic() +
+    labs(
+        x = "Cohort Year",
+        y = "Average High School GPA",
+        title = 
+            "UWF Average High School GPA by College", 
+      subtitle= "Cohort 2015-2020 " 
+        )
+    
+```
+
+```{r}
+
+MyCRS <- myTierdata %>% 
+  group_by(CRSNAME1) %>% 
+  summarise(cCRSNAME = n());MyCRS
+# pop.table
+m <- matrix(1:4, 2)
+m
+proportions(m, 2)
+
+DF <- as.data.frame(UCBAdmissions)
+tbl <- xtabs(Freq ~ Gender + Admit, DF)
+
+proportions(tbl, "Gender")
+
+# Create prob.table 
+prob.by.crs1 <- with(myTierdata, table(CRSNAME1)) # requency
+prob.by.crs2 <- prop.table(prob.by.crs1) #margin=1 total by row # prop
+CRS1 <- data.frame(prob.by.crs2)
+CRS1 <- CRS1 %>% 
+  arrange(-Freq);CRS1 #108 obs.
+
+prob.by.crs1 <- with(myTierdata, table(CRSNAME2)) # requency
+prob.by.crs2 <- prop.table(prob.by.crs1) #margin=1 total by row # prop
+CRS2 <- data.frame(prob.by.crs2)
+CRS2 <- CRS2 %>% 
+  arrange(-Freq);CRS2 #168 obs.
+
+prob.by.crs1 <- with(myTierdata, table(CRSNAME3)) # requency
+prob.by.crs2 <- prop.table(prob.by.crs1) #margin=1 total by row # prop
+CRS3 <- data.frame(prob.by.crs2)
+CRS3 <- CRS3 %>% 
+  arrange(-Freq);CRS3 #223 obs.
+
+prob.by.crs1 <- with(myTierdata, table(CRSNAME4)) # requency
+prob.by.crs2 <- prop.table(prob.by.crs1) #margin=1 total by row # prop
+CRS4 <- data.frame(prob.by.crs2)
+CRS4 <- CRS4 %>% 
+  arrange(-Freq);CRS4 #334 obs.
+```
+```{r}
+ggDWFCRSNAMEre <- DWFCRSNAMEre[1:30,] %>% 
+  filter(DWF == "PASS")
+ggplot(ggDWFCRSNAMEre, aes(x=COURSE_NAME, y=TotalFreq, col= COURSE_NAME))+geom_point(size=3)
+
+
+```
+```{r}
+glimpse(DWFCRSNAMEre)
+DWFCRSNAMEre$DWF <- factor(DWFCRSNAMEre$DWF)
+
+# FAIL RATE by Total Freq
+ggDFDWF <- DWFCRSNAMEre %>%
+   filter(DWF =="FAIL") %>% 
+  arrange(-TotalFreq) ;ggDFDWF 
+
+
+gg1DWF <- ggDFDWF[1:20,];gg1DWF  # choose top total freq 20
+```
+```{r}
+library(ggplot2)
+ggplot(gg1DWF, aes(x=COURSE_NAME, y=Rate, col= COURSE_NAME))+geom_point(size=5)+ labs(
+        x = "Top20 1st fall Term courses ",
+        y = "DFW Rate %",
+        title = 
+            "UWF DWF Rate by Top 20 1st Term Courses", 
+      subtitle= "Cohort 2015-2020 " 
+        )+theme_classic() 
+
+```
+
 
