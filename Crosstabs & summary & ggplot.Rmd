@@ -576,5 +576,14 @@ ggplot(gg1DWF, aes(x=COURSE_NAME, y=Rate, col= COURSE_NAME))+geom_point(size=5)+
         )+theme_classic() 
 
 ```
-
+```{r}
+library(Hmisc)
+Hmisc::describe(aveGPANB)
+xtabs(~aveGPANB$APPLICANT_TIER+aveGPANB$HOURS_BROUGHT_TO_UNIVERSITY)
+hist(aveGPANB$HOURS_BROUGHT_TO_UNIVERSITY)
+meanPriorHours <- aveGPANB %>% 
+  group_by(APPLICANT_TIER) %>% 
+  summarise(meanPrior = mean(HOURS_BROUGHT_TO_UNIVERSITY), nFTIC=n(), .groups="drop")
+meanPriorHours
+```
 
