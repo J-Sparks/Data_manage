@@ -1,0 +1,175 @@
+---
+title: "R Notebook_shaping"
+output: html_notebook
+---
+
+
+```{r}
+library(data.table)
+library(ISLR)
+library(dplyr)
+```
+
+```{r}
+data("College")
+str(College)
+dtcollege <- data.table(College, keep.rownames = TRUE)
+mysubset <- dtcollege[40:60,];colnames(mysubset);class(mysubset)
+round(mean(mysubset$Enroll), digits = 1)
+```
+```{r}
+#extract some values in data table
+x <- dtcollege[!(Outstate) %between% c(8000,14000)];x
+x1 <- dtcollege[!(rn)=="Claflin College"];x1
+
+```
+```{r}
+ head(dtcollege[order(-Top10perc), rn], 10) # from to10%HS by name high to low
+ head(dtcollege[order(Grad.Rate
+), rn],10) # for s.fRation by low to high
+```
+
+```{r}
+# created a new colname
+dtcollege$EARatio <-(dtcollege$Enroll/dtcollege$Accept)
+
+#order with EARatio, Enroll and Accept as table
+head(dtcollege[order(-EARatio), .(rn, EARatio, Enroll, Accept)], 10)
+
+head(dtcollege[order(-S.F.Ratio) & Room.Board < 4000, rn], 10)
+```
+```{r}
+subsetforunder4000 <- dtcollege[Room.Board<4000]
+head(subsetforunder4000[order(S.F.Ratio), .(rn, S.F.Ratio)],10) # low to high
+```
+```{r}
+  
+# select columns
+college.gradnr <- dtcollege[, c("rn","Apps","Accept","Enroll","F.Undergrad","P.Undergrad")];college.gradnr
+```
+```{r}
+# create colname indicate highinterest for apps > 10000
+dtcollege[Apps> 10000, HIGHINTEREST := 1L];tail(dtcollege,10) # := means create col and 1L means 1 or NA
+# to delete the col
+dtcollege[,c("HIGHINTEREST") := NULL];tail(dtcollege)
+```
+```{r}
+head(dtcollege[ ,undergradration := F.Undergrad/P.Undergrad][order(-undergradration)], 10)
+```
+```{r}
+#how many
+dtcollege[Expend>20000, .N]
+dtcollege[Books + Room.Board > 7000, .N]
+dtcollege[ ,  by=Private, .N]
+#how many by combination
+#setDT(dtcollege)[, .N, by=.(rn,Private)]
+
+```
+```{r}
+#set key words
+setkey(dtcollege , F.Undergrad, P.Undergrad);head(dtcollege) #give you increasing order by F.Under
+
+#filter
+dtcollege[ F.Undergrad < 1000 & P.Undergrad < 100]
+# point for 393 F and 4 P
+dtcollege[ .(393,4)]
+```
+```{r}
+# get a data.table for some colms
+dtcollege[, !c("Apps","Accept","Enroll"), with=F] #false give number of cols
+#keep the cols
+dtcollege[ , 3:5, with=F]
+```
+```{r}
+#how many colleges with <800 applic received have a Top10perd > 40? two conditions
+dtcollege[ Apps< 800 & Top10perc > 40 , .N]
+
+#How many with three conditions
+dtcollege[Apps < 900 & Outstate<10000 & Top10perc>30, .N]
+
+#How many three conditions and or
+dtcollege[ Apps < 1000 & (Top10perc>20 | Top25perc>30), .N]
+# other way
+dtcollege[ Apps < 1000, .N , by = (Top10perc>20 | Top25perc>30)] # give you total apps and break part by
+
+```
+### dplyr
+```{r}
+ mydf <- data.frame(results12020)
+head(mydf)
+colnames(mydf)
+arrange(mydf, -BelowGPA)
+slice(mydf, c(1:10))
+colnames(mydf)
+rename_(mydf, "Tier" = "APPLICANT_TIER") #worked
+distinct_(select(mydf, ENTRY_PROGRAM))
+head(mutate(mydf, BelowPr = BelowGPA*100),10)
+sample_n(mydf, 10)
+slice(mydf, c(1:5)) # row IDS
+```
+
+```{r}
+# mutating joins column levels
+testdf1 <- CRSCSEdata2020
+testdf2 <- CSEdata2020
+JI <- inner_join(testdf1,testdf2, by=c("UNIV_ROW_ID"="UNIV_ROW_ID"))
+JL <- left_join(testdf1, testdf2)
+
+#filtering joins
+JA <- anti_join(testdf1,testdf2)#uniquerows for both dataset (filter on A dataset)
+JS <- semi_join(testdf1, testdf2)#common row for both dataset (filter on A dataset)
+
+#set operations
+
+#union(testdf1,testdf2) # returens all data, but identical entries show up onl once in the resutls:complementary
+#intersect(testdf1,testdf2) # returens only the identical entries and exludes everthing else; complementary
+#setdiff(testdf1,testdf2)#returns the data of x, but exclude the entries which are also present in Y
+```
+```{r}
+library(dbplyr)
+#translating R to SQL
+translate_sql(5) #numeric
+translate_sql(5L) # L for integer in R
+translate_sql(x) # object
+translate_sql("x") # string
+translate_sql(x-500)
+translate_sql(sin(x)-500) # math function
+translate_sql(x^2 < 400)
+translate_sql(x ==1 && (t<100 || w>300)) # boolean
+translate_sql(x %% 2 == 10) # modulo division
+translate_sql(if ( x > 11) "new" else "old") # if statements
+translate_sql(x < 11 & !(y>=2)) # boolean
+
+
+```
+```{r}
+# using SQL on datasets in R
+library(sqldf)
+library(ggplot2)
+
+sqldf("SELECT * FROM results1 WHERE BelowGPA > 0.5")
+sqldf("SELECT * FROM results2 WHERE AboveGPA < 0.5")
+sqldf("SELECT * FROM results3 WHERE APR = 'Yes' AND (BelowGPA > 0.5 OR aveGPAInd = 'BelowGPA')")
+sqldf("SELECT * FROM testdf1 WHERE Stu_ETHNICITY == 'Asian' AND (Stu_NationCode='KOR')")
+
+```
+
+```{r}
+# Get the SQLite 
+#install.packages("RSQLite")
+library(RSQLite)
+mydfresults <- rbind.data.frame(results12020, results22020,results32020,results42020,results52020)
+#empty database
+connection <- dbConnect(RSQLite::SQLite(), 'newmyresults.db')
+dbWriteTable(connection, "newmyresults", mydfresults) #write table connection new and old
+dbListTables(connection) # call newmyresults
+dbListFields(connection, "newmyresults") # all variables from old
+dbGetQuery(connection, "SELECT * FROM newmyresults WHERE BelowGPA > 0.5")
+
+```
+# Set up database in r using waring data
+```{r}
+
+
+```
+
