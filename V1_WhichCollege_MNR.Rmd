@@ -1,0 +1,184 @@
+---
+title: "R Notebook"
+output:
+  html_document:
+    df_print: paged
+---
+### import data
+```{r}
+library(dplyr)
+wide_enrcrsdata <- read.csv("G:/Shared drives/HMCSE-PAM Lab/DATA 202001/V1FreqOrderwith9crs_MASTER_CRSCSE_allcourse_tier.csv")
+
+degspring2020 <- read.csv("G:/Shared drives/HMCSE-PAM Lab/DATA 202001/STUDENT_DEGREE_SPRING20.csv") %>%
+  filter(Deg_DEMO_TIME_FRAME>=200805 ) %>% 
+  group_by(STU_ID) %>% filter(Deg_Desc=="Bachelor", .by_group=TRUE) %>% mutate(number_Bachelor=row_number(), endDay=rep("01")) %>% 
+   select(1:2,Deg_College, Deg_TermDate,Deg_Desc ,number_Bachelor)
+
+library(stringr)
+enrspring2020 <- read.csv("G:/Shared drives/HMCSE-PAM Lab/DATA 202001/STU_ENROLLMENT_SPRING20.csv") %>% 
+  filter(Stu_StudentTypeCode == "B" & # for FTIC
+            Stu_LoadIPEDSFTPT=="Full Time" & # full time
+           Stu_AdmissionRecentTypeCode=="B" & # FTIC
+           Stu_DEMO_TIME_FRAME >= 200805 ) %>% # data quality since 2015
+  group_by(STU_ID) %>% 
+  filter(str_detect(Stu_Term,"Fall...")) %>% 
+  separate(Stu_AdmissionTerm, into = c("Term","Cohort"),sep=" ")
+  
+wide_info_deg <- merge(enrspring2020, degspring2020,by="STU_ID", all.x = TRUE)
+wide_info_deg$Stu_TermDate <- as.Date.character(wide_info_deg$Stu_TermDate)
+wide_info_deg$Deg_TermDate <- as.Date.character(wide_info_deg$Deg_TermDate)
+
+head(wide_info_deg,10)
+# create col for data
+wide_info_deg$Days <- as.character(round(wide_info_deg$Deg_TermDate - as.Date(wide_info_deg$Stu_TermDate)))
+
+wide_info_deg$Months <- as.character(round(wide_info_deg$Deg_TermDate - as.Date(wide_info_deg$Stu_TermDate))/(365.25/12))
+
+wide_info_deg$Years <- as.character(round(wide_info_deg$Deg_TermDate - as.Date(wide_info_deg$Stu_TermDate))/(365))
+wide_info_deg$Ontime_gradu <- ifelse(wide_info_deg$Years < 4.00, "Ontime","Overtime")
+
+wide_info_deg$Semester <- as.character(round(wide_info_deg$Deg_TermDate - as.Date(wide_info_deg$Stu_TermDate))/(365/3))
+
+wide_info_deg$Start_FTIC_Term  <- wide_info_deg$Stu_TermDate
+head(wide_info_deg,10)
+```
+```{r}
+xtabs(~wide_info_deg$Deg_College+wide_info_deg$Ontime_gradu+wide_info_deg$Cohort+wide_info_deg$Deg_Desc)
+```
+
+```{r}
+MASTER_CRSCSE_allcourse_tier <- read.csv("G:/Shared drives/HMCSE-PAM Lab/DATA 202001/V1FreqOrderwith9crs_MASTER_CRSCSE_allcourse_tier.csv") %>% filter(COHORT_YEAR<=20202019)
+library(ggplot2)
+qplot(data = MASTER_CRSCSE_allcourse_tier, x=GPA_HIGHSCHOOL, y= FIRST_FALL_BRIGHT_FUTURES_AMOUNT, color=ETHNICITY, facets = APR ~ ETHNICITY)
+qplot(data = MASTER_CRSCSE_allcourse_tier,   x=GPA_HIGHSCHOOL, y= FIRST_FALL_PELL_AMOUNT, color=APR, facets =  APR ~ ETHNICITY)
+
+```
+
+```{r}
+qplot(data = MASTER_CRSCSE_allcourse_tier, x=APPLICANT_TIER, y= FIRST_FALL_BRIGHT_FUTURES_AMOUNT, color=ETHNICITY, facets = APR ~ENTRY_COLLEGE)
+qplot(data = MASTER_CRSCSE_allcourse_tier,   x=APPLICANT_TIER, y= GPA_HIGHSCHOOL, color=APR, facets = APR ~ETHNICITY)
+
+```
+### table for each college
+```{r}
+
+library(tidyr)
+mycollege <- MASTER_CRSCSE_allcourse_tier %>% 
+  group_by(ENTRY_COLLEGE,ENTRY_DEPARTMENT) %>% 
+  summarise(totalFTIC = n()) %>% 
+  arrange(-totalFTIC, .by_group=TRUE) ;mycollege
+
+round(prop.table(table(MASTER_CRSCSE_allcourse_tier$ENTRY_COLLEGE)), digits = 2)
+tb1 <- table(MASTER_CRSCSE_allcourse_tier$ENTRY_COLLEGE)
+cbind(tb1,prop.table(tb1))
+tblFun <- function(x){
+    tbl <- table(x)
+    res <- cbind(tbl,round(prop.table(tbl)*100,2))
+    colnames(res) <- c('Count','Percentage')
+    res
+}
+
+do.call(rbind,lapply(MASTER_CRSCSE_allcourse_tier[6:7],tblFun))
+
+
+```
+
+
+
+
+```{r}
+library(dplyr)
+recodingdemographicFACTORS <- MASTER_CRSCSE_allcourse_tier %>% 
+  filter(ENTRY_COLLEGE=="CASSH" | ENTRY_COLLEGE=="HMCSE"|ENTRY_COLLEGE=="UKCOH") %>% 
+  mutate(TIER_THREE = ifelse(APPLICANT_TIER>=4,3,ifelse(APPLICANT_TIER==3,2,1))) %>% 
+  mutate(ETHNICITY_recode1 = ifelse(ETHNICITY=="White","White",ifelse(ETHNICITY=="African American", "AA", ifelse(ETHNICITY=="Asian","Asian", ifelse(ETHNICITY=="Hispanic","HSP", ifelse(ETHNICITY=="Two or More","TM","OTHERS")))))) %>% 
+  mutate(ETHNICITY_recode2 = ifelse(ETHNICITY=="White","White","Non_White")) %>% 
+  mutate(ETHNICITY_recode3 = ifelse(ETHNICITY=="White","White",ifelse(ETHNICITY=="African American"|
+                                                                        ETHNICITY=="Hispanic","AAH","OTHERS")))
+do.call(rbind,lapply(recodingdemographicFACTORS[29],tblFun))
+
+Majorrecoding <- recodingdemographicFACTORS %>% 
+  mutate(ENTRY_DEPARTMENT.recode1=ifelse(ENTRY_COLLEGE=="HMCSE"&ENTRY_DEPARTMENT=="Biology","Biology","Others"))
+unique(Majorrecoding$ENTRY_DEPARTMENT.recode1)
+```
+
+```{r}
+qplot(data = recodingdemographicFACTORS, x=recodingdemographicFACTORS$GPA_HIGHSCHOOL, y= recodingdemographicFACTORS$FIRST_FALL_BRIGHT_FUTURES_AMOUNT, color=recodingdemographicFACTORS$TIER_THREE, facets = APR ~ETHNICITY_recode1)
+
+qplot(data = recodingdemographicFACTORS,   x=recodingdemographicFACTORS$GPA_HIGHSCHOOL, y= recodingdemographicFACTORS$FIRST_FALL_PELL_AMOUNT, color=APR, facets = GENDER ~ ENTRY_COLLEGE)
+
+qplot(data = recodingdemographicFACTORS, x=recodingdemographicFACTORS$TIER_THREE, y= recodingdemographicFACTORS$FIRST_FALL_BRIGHT_FUTURES_AMOUNT, color=recodingdemographicFACTORS$ETHNICITY_recode2, facets = APR ~ETHNICITY_recode2)
+
+qplot(data = recodingdemographicFACTORS,   x=FIRST_FALL_GPA, y= FIRST_FALL_BRIGHT_FUTURES_AMOUNT, color=ENTRY_COLLEGE)
+
+```
+# manage the data for three college
+```{r}
+  whichcollege <- recodingdemographicFACTORS %>% 
+  filter(COHORT_YEAR < 20202021) %>% 
+  filter(COUNTY_GROUP=="Tri-County") %>% 
+  select(HOURS_BROUGHT_TO_UNIVERSITY,FIRST_FALL_PELL_AMOUNT,FIRST_FALL_BRIGHT_FUTURES_AMOUNT,FIRST_FALL_NON_NEED_BASED_LOANS_AMOUNT,GENDER,COUNTY,GPA_HIGHSCHOOL,APR,FIRST_FALL_GPA,APPLICANT_TIER,ENTRY_COLLEGE) %>% 
+  na.omit()
+
+with(whichcollege, table(ENTRY_COLLEGE, COUNTY))
+with(whichcollege, table(ENTRY_COLLEGE, APPLICANT_TIER))
+with(whichcollege, do.call(rbind, tapply(GPA_HIGHSCHOOL, COUNTY, function(x) c(M=mean(x), SD=sd(x)))))
+with(whichcollege, do.call(rbind, tapply(HOURS_BROUGHT_TO_UNIVERSITY, COUNTY, function(x) c(M=mean(x), SD=sd(x)))))
+
+
+
+
+```
+```{r}
+library(foreign)
+library(nnet)
+library(ggplot2)
+library(reshape2)
+library(caret)
+whichcollege$ENTRY_COLLEGE <- factor(whichcollege$ENTRY_COLLEGE)
+whichcollege$ENTRY_COLLEGE_out <- relevel(whichcollege$ENTRY_COLLEGE, ref="UKCOH")
+whichcollege1 <- whichcollege[,-11]
+set.seed(123)
+model_first <- multinom(ENTRY_COLLEGE_out~., data = whichcollege1)
+summary(model_first)
+z <- summary(model_first)$coefficients/summary(model_first)$standard.errors
+z
+
+```
+```{r}
+# 2-tailed z test
+p <- (1 - pnorm(abs(z), 0, 1)) * 2
+p
+```
+
+
+```{r}
+## extract the coefficients from the model and exponentiate
+exp(coef(model_first))
+```
+```{r}
+confMatRank <- table(predict(model_first), whichcollege$ENTRY_COLLEGE)
+confMatRank
+sum(diag(confMatRank)/sum(confMatRank))
+1-sum(diag(confMatRank)/sum(confMatRank)) 
+
+p <- predict(model_first, whichcollege)
+pred <- predict(model_first, whichcollege[c(1:10),], type="prob")
+pred
+
+n <- table(whichcollege$ENTRY_COLLEGE)
+n
+n/sum(n)
+
+p <- predict(model_first, whichcollege)
+tab <- table(p, whichcollege$ENTRY_COLLEGE)
+tab/colSums(tab)
+```
+```{r}
+head(p <- fitted(model_first),10)
+head(whichcollege[,11],10)
+```
+```{r}
+
+```
+
