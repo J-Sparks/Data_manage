@@ -102,7 +102,38 @@ final_completed.missingNA <- complete(my_imp,3) #choose imputation numbers
 
 
 
+## Na Imputation Methods (Used as regressions and range)
+Red plot shows the proportion of NA and yellow shows that your imputation still have some NA and this means
+the imputations using variables could not be applied to thoses observations
+```{r}
+library(mice)
+library(VIM)
+myup2020NAomit2 <- myup2020NAomit %>% 
+  select(GPA_HIGHSCHOOL,APPLICANT_TIER,ACT_PROPORTION) ;glimpse(myup2020NAomit2)
+myup2020NAomit2$GPA_HIGHSCHOOL <- as.numeric(gsub("\\.","",myup2020NAomit2$GPA_HIGHSCHOOL))
+myup2020NAomit2$APPLICANT_TIER <- as.numeric(gsub("\\.","",myup2020NAomit2$APPLICANT_TIER))
+myup2020NAomit2$ACT_PROPORTION <- as.numeric(gsub("\\.","",myup2020NAomit2$ACT_PROPORTION))
 
+
+md.pattern(myup2020NAomit2)
+md.pairs(myup2020NAomit2)
+marginplot(myup2020NAomit2[, c("APPLICANT_TIER","GPA_HIGHSCHOOL")])
+myup2020NAomit2$APPLICANT_TIER <- log(myup2020NAomit2$APPLICANT_TIER)
+myup2020NAomit2$GPA_HIGHSCHOOL <- as.numeric(myup2020NAomit2$GPA_HIGHSCHOOL)
+myup2020NAomit2$GPA_HIGHSCHOOL <- log(myup2020NAomit2$GPA_HIGHSCHOOL)
+aggr(myup2020NAomit2)
+imp_regression <- regressionImp(GPA_HIGHSCHOOL ~ ACT_PROPORTION+APPLICANT_TIER, myup2020NAomit2)
+imp_ranger <- rangerImpute(GPA_HIGHSCHOOL~ACT_PROPORTION+APPLICANT_TIER, myup2020NAomit2)
+aggr(imp_regression, delimiter = "_imp")
+aggr(imp_ranger, delimiter = "_imp")
+imp_regression[ , c("GPA_HIGHSCHOOL", "APPLICANT_TIER","GPA_HIGHSCHOOL_imp")] %>% 
+  marginplot(delimiter = "_imp")
+marginplot(kNN(log10(myup2020NAomit2[,c("APPLICANT_TIER","GPA_HIGHSCHOOL")])),delimiter="_imp")
+imputeHS <- mice(myup2020NAomit[, c("APPLICANT_TIER","GPA_HIGHSCHOOL","ACT_PROPORTION"),m=3,seed=123])
+imputeHS$imp$GPA_HIGHSCHOOL
+myup2020NAomit[752:759,"ACT_PROPORTION"]
+myup2020NAomitNEW <- complete(imputeHS, 4);colnames(myup2020NAomitNEW) <- c("NewTier","NewGPAHS","NewACT")
+myup2020NAomitNEWOLD <- cbind(myup2020NAomit,myup2020NAomitNEW);glimpse(myup2020NAomitNEWOLD)
 
 
 
