@@ -45,3 +45,66 @@ xyplot(impute, GPA_HIGHSCHOOL ~ Stu_InstitutionalGPA1  | .imp, pch=20, cex=1.4) 
 mdata <- select(mac2311merge_df, 1:23)
 mymac2311_B <- cbind(mdata, NewDFmac2311)### this is the completed datasest
 
+#####################################################################################################################
+
+library(readxl)
+CSEdata <- read_excel("~/Data_IR/CSEdata.xlsx", 
+    col_types = c("numeric", "numeric", "numeric", 
+        "numeric", "numeric", "numeric", 
+        "text", "text", "text", "text", "text", 
+        "text", "text", "text", "text", "numeric", 
+        "text", "text", "text", "text", "text", 
+        "text", "text", "text", "text", "text", 
+        "text", "text", "text", "text", "numeric", 
+        "numeric", "text", "text", "numeric", 
+        "text", "numeric", "text", "numeric", 
+        "text", "numeric", "text", "numeric", 
+        "text", "numeric", "numeric", "text", 
+        "numeric", "numeric", "text", "numeric", 
+        "text", "numeric", "text", "numeric"))
+myup2019 <- CSEdata
+library(Hmisc)
+Hmisc::describe(myup2020[, 18:20])
+glimpse(myup2019)
+get.missing.prop <- function(x){sum(is.na(x)/length(x)*100)}
+apply(myup2019, 2, get.missing.prop)
+
+get.missing.variables <- myup2019 %>% select(GPA_HIGHSCHOOL, APPLICANT_TIER,ACT_PROPORTION,SAT_PROPORTION,GPA_ENTERING_SECOND_FALL)
+
+#methods lists
+methods(mice)
+
+#replace with mean values but not used is here
+#myup2019$GPA_HIGHSCHOOL[which(is.na(myup2020$GPA_HIGHSCHOOL))] <- mean(myup2019$GPA_HIGHSCHOOL, na.rm = TRUE)
+tail(get.missing.variables,10)
+
+#using dplyr::na_if() function
+get.missing.variables.NA <- na_if(get.missing.variables, 0);tail(get.missing.variables.NA,10)
+
+# replace Na to zero for sing vector
+get.missing.variables.NA$GPA_ENTERING_SECOND_FALL[is.na(get.missing.variables.NA$GPA_ENTERING_SECOND_FALL)] <- 0
+glimpse(get.missing.variables.NA)
+apply(get.missing.variables.NA, 2, get.missing.prop)
+# if the proportion of massing values is higher than 50% get lid of them
+
+get.missing.variables.NA2 <- get.missing.variables.NA
+my_imp <- mice(get.missing.variables.NA2, m=5, method = c("norm.predict","pmm","pmm","pmm",""), maxit = 5, print=FALSE) #higer maxiteration give high prediction
+my_imp$method
+
+# get summary to see how close to them
+summary(get.missing.variables.NA2)
+my_imp$imp$SAT_PROPORTION [1:10,]
+meanimp <- data.frame(my_imp$imp$SAT_PROPORTION )
+apply(meanimp,2,mean) # choose 5 or 3
+
+final_completed.missingNA <- complete(my_imp,3) #choose imputation numbers
+
+
+
+
+
+
+
+
+
+
