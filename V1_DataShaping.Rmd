@@ -1,0 +1,264 @@
+---
+title: "R Notebook_shaping"
+output:
+  html_document:
+    df_print: paged
+---
+
+
+```{r}
+library(data.table)
+library(ISLR)
+library(dplyr)
+```
+
+```{r}
+data("College")
+str(College)
+dtcollege <- data.table(College, keep.rownames = TRUE)
+mysubset <- dtcollege[40:60,];colnames(mysubset);class(mysubset)
+round(mean(mysubset$Enroll), digits = 1)
+```
+```{r}
+#extract some values in data table
+x <- dtcollege[!(Outstate) %between% c(8000,14000)];x
+x1 <- dtcollege[!(rn)=="Claflin College"];x1
+
+```
+```{r}
+ head(dtcollege[order(-Top10perc), rn], 10) # from to10%HS by name high to low
+ head(dtcollege[order(Grad.Rate
+), rn],10) # for s.fRation by low to high
+```
+
+```{r}
+# created a new colname
+dtcollege$EARatio <-(dtcollege$Enroll/dtcollege$Accept)
+
+#order with EARatio, Enroll and Accept as table
+head(dtcollege[order(-EARatio), .(rn, EARatio, Enroll, Accept)], 10)
+
+head(dtcollege[order(-S.F.Ratio) & Room.Board < 4000, rn], 10)
+```
+```{r}
+subsetforunder4000 <- dtcollege[Room.Board<4000]
+head(subsetforunder4000[order(S.F.Ratio), .(rn, S.F.Ratio)],10) # low to high
+```
+```{r}
+  
+# select columns
+college.gradnr <- dtcollege[, c("rn","Apps","Accept","Enroll","F.Undergrad","P.Undergrad")];college.gradnr
+```
+```{r}
+# create colname indicate highinterest for apps > 10000
+dtcollege[Apps> 10000, HIGHINTEREST := 1L];tail(dtcollege,10) # := means create col and 1L means 1 or NA
+# to delete the col
+dtcollege[,c("HIGHINTEREST") := NULL];tail(dtcollege)
+```
+```{r}
+head(dtcollege[ ,undergradration := F.Undergrad/P.Undergrad][order(-undergradration)], 10)
+```
+```{r}
+#how many
+dtcollege[Expend>20000, .N]
+dtcollege[Books + Room.Board > 7000, .N]
+dtcollege[ ,  by=Private, .N]
+#how many by combination
+#setDT(dtcollege)[, .N, by=.(rn,Private)]
+
+```
+```{r}
+#set key words
+setkey(dtcollege , F.Undergrad, P.Undergrad);head(dtcollege) #give you increasing order by F.Under
+
+#filter
+dtcollege[ F.Undergrad < 1000 & P.Undergrad < 100]
+# point for 393 F and 4 P
+dtcollege[ .(393,4)]
+```
+```{r}
+# get a data.table for some colms
+dtcollege[, !c("Apps","Accept","Enroll"), with=F] #false give number of cols
+#keep the cols
+dtcollege[ , 3:5, with=F]
+```
+```{r}
+#how many colleges with <800 applic received have a Top10perd > 40? two conditions
+dtcollege[ Apps< 800 & Top10perc > 40 , .N]
+
+#How many with three conditions
+dtcollege[Apps < 900 & Outstate<10000 & Top10perc>30, .N]
+
+#How many three conditions and or
+dtcollege[ Apps < 1000 & (Top10perc>20 | Top25perc>30), .N]
+# other way
+dtcollege[ Apps < 1000, .N , by = (Top10perc>20 | Top25perc>30)] # give you total apps and break part by
+
+```
+### dplyr
+```{r}
+library(dplyr)
+EW_aveAPR_FTIC2020_lists_all <- read.csv("~/DataShaping/EW_aveAPR_FTIC2020_lists_all.csv", stringsAsFactors=TRUE)
+
+
+ mydf <- data.frame(EW_aveAPR_FTIC2020_lists_all)
+head(mydf)
+colnames(mydf)
+arrange(mydf, -BelowGPA)
+slice(mydf, c(1:10))
+colnames(mydf)
+rename_(mydf, "Tier" = "APPLICANT_TIER") #worked
+distinct_(select(mydf, ENTRY_PROGRAM))
+head(mutate(mydf, BelowPr = BelowGPA*100),10)
+sample_n(mydf, 10)
+slice(mydf, c(1:5)) # row IDS
+```
+
+```{r}
+# mutating joins column levels
+testdf1 <- read.csv("~/Datashaping/CRSCSEdata2020.csv")
+testdf2 <- read.csv("~/DataShaping/CSEdata2020.csv")
+JI <- inner_join(testdf1,testdf2, by=c("UNIV_ROW_ID"="UNIV_ROW_ID"))
+JL <- left_join(testdf1, testdf2)
+
+#filtering joins
+JA <- anti_join(testdf1,testdf2)#uniquerows for both dataset (filter on A dataset)
+JS <- semi_join(testdf1, testdf2)#common row for both dataset (filter on A dataset)
+
+#set operations
+
+#union(testdf1,testdf2) # returens all data, but identical entries show up onl once in the resutls:complementary
+#intersect(testdf1,testdf2) # returens only the identical entries and exludes everthing else; complementary
+#setdiff(testdf1,testdf2)#returns the data of x, but exclude the entries which are also present in Y
+```
+```{r}
+library(dbplyr)
+#translating R to SQL
+translate_sql(5) #numeric
+translate_sql(5L) # L for integer in R
+translate_sql(x) # object
+translate_sql("x") # string
+translate_sql(x-500)
+translate_sql(sin(x)-500) # math function
+translate_sql(x^2 < 400)
+translate_sql(x ==1 && (t<100 || w>300)) # boolean
+translate_sql(x %% 2 == 10) # modulo division
+translate_sql(if ( x > 11) "new" else "old") # if statements
+translate_sql(x < 11 & !(y>=2)) # boolean
+
+
+```
+```{r}
+# using SQL on datasets in R
+library(sqldf)
+library(ggplot2)
+colnames(EW_aveAPR_FTIC2020_lists_all)
+sqldf("SELECT * FROM EW_aveAPR_FTIC2020_lists_all WHERE BelowGPA > 0.5")
+sqldf("SELECT * FROM EW_aveAPR_FTIC2020_lists_all WHERE AboveGPA < 0.5")
+sqldf("SELECT * FROM EW_aveAPR_FTIC2020_lists_all WHERE AlertR1 = 'NoEW' AND (BelowGPA > 0.5 OR aveAPR = 'Non-aveAPR')")
+sqldf("SELECT * FROM EW_aveAPR_FTIC2020_lists_all WHERE EWNum >1")
+
+```
+
+```{r not to run}
+# Get the SQLite 
+#install.packages("RSQLite")
+library(RSQLite)
+#mydfresults <- rbind.data.frame(results12020, results22020,results32020,results42020,results52020)
+#mydfresults <- EW_aveAPR_FTIC2020_lists_all
+#empty database
+#connection <- dbConnect(RSQLite::SQLite(), 'newmyresults1.db')
+#dbWriteTable(connection, "newmyresults1", mydfresults) #write table connection new and old
+#dbListTables(connection) # call newmyresults
+#dbListFields(connection, "newmyresults1") # all variables from old
+#dbGetQuery(connection, "SELECT * FROM newmyresults1 WHERE BelowGPA > 0.5")
+
+```
+# Set up database in r using waring data
+```{r}
+install.packages("sqldf")
+library(sqldf)
+```
+# Outliers in data set
+## remove / leave them / replace with mean or different values
+### three sigma edit rule mean +- t*SD (ESD method)
+### boxplot method Q1-c*IQD & Q3-c*IQD, IQD=Q3-Q1, c=1.5
+### advanced methods for multivariate data model based method or prosimity based method
+### mark ouliers with different colors or shapes - visualization- boxplot, scatterplot
+## using library( mvoutlier) in R
+## use a stats tests + distanc emeasure approach : ESD mehtod
+```{r}
+set.seed(123)
+x = c( rnorm(10), 150);x
+t=3
+m= mean(x)
+s=sd(x)
+b1= m-t*s;b1
+b2= m+t*s;b2
+y= ifelse(x>= b1 & x<= b2, 0,1);y
+plot(x, col=y+10)
+```
+## boxplot method
+```{r}
+boxplot(x)
+boxplot.stats(x)
+```
+## package outliers
+```{r}
+library(outliers)
+dixon.test(x)
+grubbs.test(x, type=11, two.sided = T) # type=11 fpr a test for tw0 outliers on opposite tails.
+
+```
+## advaced techniques for multivariate data
+```{r}
+library(dplyr)
+EW_all <- read.csv("~/DataShaping/EW_aveAPR_FTIC2020_lists_all.csv", stringsAsFactors=TRUE)
+MAC1147EW <- EW_all %>% 
+  filter(Course.Number.x == "MAC1147")
+EW1147 <- MAC1147EW %>% 
+  group_by(Section.Name) %>% 
+  summarise(cFTIC=n());EW1147
+```
+```{r}
+NBC_By_Tier_resultsUWF <- read.csv("~/Data_IR/NBC_By_Tier_resultsUWF.csv", stringsAsFactors=TRUE)
+myoutdf <- NBC_By_Tier_resultsUWF %>% 
+  filter(COHORT_YEAR< 20202021) %>% 
+  select(GPA_HIGHSCHOOL,HOURS_BROUGHT_TO_UNIVERSITY,APPLICANT_TIER,CRSNAME1) %>% 
+   na.omit();myoutdf
+
+```
+
+```{r}
+library(mvoutlier)
+myout <- sign1(myoutdf[, 1:3], qqcrit=0.975)#;myout #$wfinal01
+myout = pcout(myoutdf[,1:3])
+plot(myoutdf$GPA_HIGHSCHOOL, myoutdf$HOURS_BROUGHT_TO_UNIVERSITY, col=myout$wfinal01+2)
+myoutdf$out <- myout$wfinal01
+glimpse(myoutdf)
+notoutliers <- myoutdf %>% 
+  #filter(out == 1) %>%
+  group_by(APPLICANT_TIER, out) %>% 
+  summarise(meanHS=mean(GPA_HIGHSCHOOL),SDHS=sd(GPA_HIGHSCHOOL),maxHS=max(GPA_HIGHSCHOOL),minHS=min(GPA_HIGHSCHOOL),
+            meanPrior =mean(HOURS_BROUGHT_TO_UNIVERSITY),sdPrior=sd(HOURS_BROUGHT_TO_UNIVERSITY), maxPrio=max(HOURS_BROUGHT_TO_UNIVERSITY),
+            minPrio=min(HOURS_BROUGHT_TO_UNIVERSITY), CFTIC=n());notoutliers
+```
+
+```{r}
+library(stringr)
+# no numbers in string
+myall <- as.data.frame(myoutdf);class(myall)
+nonumner <- gsub("\\d","", myall$CRSNAME1[1:10]);head(nonumner,10)
+onlynumber <- gsub("\\D","", myall$CRSNAME1[1:10]);head(onlynumber,10)
+class(nonumner)
+str_count(myall$CRSNAME1[1:10],"ENC1101")
+all$new <- str_c(c(myall$CRSNAME1, myall$CRSNAME1), sep="");head(all$new,10) # not conc
+
+avoidspace <- gsub("\\s","", myoutdf$CRSNAME1);head(avoidspace,10)
+exchange <- gsub("[MAC]","MATH",myoutdf$CRSNAME1);head(exchange,10)
+```
+```{r}
+glimpse(myoutdf)
+
+```
+

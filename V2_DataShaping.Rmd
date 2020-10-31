@@ -1,0 +1,228 @@
+---
+title: "R Notebook_XXply"
+output:
+  html_document:
+    df_print: paged
+---
+### import data
+```{r}
+getwd()
+setwd("C:/Users/jsparks3/Documents/Repeated_F")
+P3.Future.500.The.Dataset <- read.csv("~/Repeated_F/P3-Future-500-The-Dataset.csv",
+                                      stringsAsFactors = T, na.strings = c(""))
+fin <- P3.Future.500.The.Dataset
+fin$ID <- factor(fin$ID)
+str(fin)
+summary(fin)
+```
+### convert variables factor to characters and numberic
+```{r}
+typeof(fin$ID)
+b <- as.character(fin$ID)
+typeof(b)
+c <- as.numeric(b)
+typeof(c)
+
+fin$Profit <- as.character(fin$Profit)
+fin$Profit <- as.numeric(fin$Profit)
+typeof(fin$Profit)
+str(fin)
+summary(fin)
+```
+###  gsub
+```{r}
+fin$Expenses <- gsub("Dollars", "", fin$Expenses );head(fin,10)
+fin$Growth <- gsub("%", "", fin$Growth);head(fin, 10)
+fin$Revenue <- gsub("\\$","", fin$Revenue);head(fin,10)
+fin$Revenue <- gsub(",", "", fin$Revenue)
+fin$Expenses <- gsub(",", "", fin$Expenses)
+fin$Revenue <- as.numeric(fin$Revenue)
+fin$Growth <- as.numeric(fin$Growth)
+fin$Expenses <- as.numeric(fin$Expenses);str(fin)
+```
+### look up excel sheet how we can replace missing data 
+### some variables can be proxy not all such as year or unique ID name
+### TRUE 1 and FLASE 0 and NA
+```{r}
+head(fin,24)
+get.all.with.NA <- fin[!complete.cases(fin),];get.all.with.NA
+```
+### using which() for filtering
+```{r}
+fin$Revenue==9254614
+filter.with.na <- fin[fin$Revenue==9254614,];filter.with.na
+filter.row.numer <- fin[which(fin$Revenue==9254614),];filter.row.numer
+filter.row.numer1 <- fin[which(fin$Industry=="Health"),];filter.row.numer1
+```
+###filtering using is.na()
+```{r}
+
+```
+
+
+
+```{r}
+ library(readr)
+ V1FreqOrderwith9crs_MASTER_CRSCSE_allcourse_tier <- read_csv("~/Repeated_F/V1FreqOrderwith9crs_MASTER_CRSCSE_allcourse_tier.csv")
+
+mydata1 <- V1FreqOrderwith9crs_MASTER_CRSCSE_allcourse_tier
+mydata <- mydata1 %>% 
+  select(1:5,11:14, 20:23,29:70,78:84) 
+ 
+mydata <- data.table(mydata)
+mydata$aveGPAInd <- as.factor(mydata$aveGPAInd)
+mydata$GENDER <- as.factor(mydata$GENDER)
+mydata$CRSNAME1 <- as.factor(mydata$CRSNAME1)
+mydata$CRSNAME2 <- as.factor(mydata$CRSNAME2)
+mydata$CRSNAME3 <- as.factor(mydata$CRSNAME3)
+mydata$CRSNAME4 <- as.factor(mydata$CRSNAME4)
+mydata$HIGH_SCHOOL_NAME <- as.factor(mydata$HIGH_SCHOOL_NAME)
+mydata$ENTRY_COLLEGE <- as.factor(mydata$ENTRY_COLLEGE)
+mydata[ , by=aveGPAInd, .N]
+class(mydata);mydata$aveGPA <- mydata$aveGPAInd
+```
+#library
+#install.packages("plyr")
+#library(plyr)
+##source https://www.diegobarneche.com/2014-12-11-ufsc/lessons/40-repeating/index.html
+```{r}
+library(plyr)
+#create function for counts and %
+daply(mydata, .(ETHNICITY), get.n.FTIC)
+#using daply (data.frame+arrary) xxply(.data, .variables, .fun)
+get.avePGA <- function(x) mean(x$FIRST_FALL_GPA)
+get.na.pop <- function(x) {
+  sum(is.na(x))/length(x)*100
+  }
+get.n.FTIC<- function(x) length(unique(x$UNIV_ROW_ID))
+# create multi linear regression function
+
+naivebBays.model <- function(x){
+  naive_bayes(aveGPA ~ APPLICANT_TIER+ENTRY_COLLEGE+ AP_CREDITS+COUNTY+GENDER+ENTRY_PROGRAM+ +HIGH_SCHOOL_NAME+ETHNICITY+
+         CRSNAME1+CRSNAME2+CRSNAME3+CRSNAME4+
+         HOURS_BROUGHT_TO_UNIVERSITY+FIRST_FALL_PELL_AMOUNT+FIRST_FALL_BRIGHT_FUTURES_AMOUNT+
+         AGE_AT_ENTRY, data=mydata)
+}
+fitted.nbc.model <- dlply(mydata, .(ETHNICITY), naivebBays.model)
+
+```
+### Multi Linear Regression ###
+```{r}
+# choose subset of data for tier and college
+linear.model <- function(x){
+  lm(FIRST_FALL_GPA~APPLICANT_TIER+AP_CREDITS+CRSNAME1+CRSgrade1, data = mydata)
+}
+fit_1 <- linear.model(mydata[mydata$COHORT_YEAR== "20172018" & mydata$ENTRY_COLLEGE=="COB", ])
+summary(fit_1)$r.squared #0.6767286
+```
+
+```{r}
+# for all tiers and colleges
+fitted.linear.modell <- dlply(mydata, .(ETHNICITY), linear.model)
+summary(fitted.linear.modell) # give you all lists of models
+#coef(fitted.linear.modell[[1]])
+ldply(fitted.linear.modell, coef) # coefficient
+ldply(fitted.linear.modell, function(x) summary(x)$r.squared)
+```
+```{r}
+# for more option to choose the group
+linear.model.com <- function(x){
+  fit <-  lm(FIRST_FALL_GPA ~ APPLICANT_TIER+AP_CREDITS+GENDER+ETHNICITY+CRSgrade1, data = mydata)
+  data.frame(n = length(x$FIRST_FALL_GPA), r2 = summary(fit)$r.squared, a = coef(fit)[[1]], b= coef(fit)[[2]])
+}
+ddply(mydata, .(ENTRY_COLLEGE,ENTRY_DEPARTMENT_CODE), linear.model.com )
+
+```
+
+```{r}
+# for other combination
+linear.model.com <- function(d,x,y){
+
+  fit <- lm(d[[y]] ~ d[[x]] )
+  data.frame(n = length(d[[y]]), r2 = summary(fit)$r.squared, a = coef(fit)[1], b= coef(fit)[2])
+}
+ddply(mydata, .(ENTRY_COLLEGE,APPLICANT_TIER), linear.model.com, y="FIRST_FALL_GPA", x= "AP_CREDITS")
+ddply(mydata, .(ENTRY_COLLEGE,APPLICANT_TIER), linear.model.com, y="FIRST_FALL_GPA", x= "CRSgrade1")
+
+
+```
+
+
+#### NBC ####
+```{r}
+# choose subset of data for tier and college
+NBC.model <- function(x){
+  naive_bayes(aveGPA ~ AP_CREDITS+GENDER+ETHNICITY+ENTRY_PROGRAM+HIGH_SCHOOL_NAME+COUNTY+
+         CRSNAME1+CRSNAME2+CRSNAME3+CRSNAME4+
+         HOURS_BROUGHT_TO_UNIVERSITY+FIRST_FALL_PELL_AMOUNT+FIRST_FALL_BRIGHT_FUTURES_AMOUNT+
+         AGE_AT_ENTRY, data=mydata)
+}
+fitted.nbc.model <- ddply(mydata, .(APPLICANT_TIER,ENTRY_COLLEGE), NBC.model)
+fitted.nbc.model[[2]]
+# create function for prediction and data.frame
+pALL <-function(x){
+ p1 <-  predict(fitted.nbc.model[1], mydata)
+  confusionMatrix(p1, mydata$aveGPA)
+}
+
+
+#create by two columns
+  
+  Tier1 <-  confusionMatrix(predict(fitted.nbc.model$"1.HMCSE", mydata), mydata$aveGPA)
+  Tier2 <-  confusionMatrix(predict(fitted.nbc.model$"2.HMCSE", mydata), mydata$aveGPA)
+  Tier3 <-  confusionMatrix(predict(fitted.nbc.model$"3.HMCSE", mydata), mydata$aveGPA)
+  Tier4 <-  confusionMatrix(predict(fitted.nbc.model$"4.HMCSE", mydata), mydata$aveGPA)
+  Tier5 <-  confusionMatrix(predict(fitted.nbc.model$"5.HMCSE", mydata), mydata$aveGPA)
+
+ 
+  models <- c("Tier1","Tier2","Tier3","Tier4","Tier5")
+  models
+  accuracy_dataset <- c(round(Tier1$overall["Accuracy"], 3),
+                    round(Tier2$overall["Accuracy"], 3),
+                    round(Tier3$overall["Accuracy"], 3),
+                    round(Tier4$overall["Accuracy"], 3),
+                    round(Tier5$overall["Accuracy"], 3))
+  
+  accyFreqEACHv1 <- data.frame(models, accuracy_dataset) # did not work correctly. visit later
+
+```
+
+
+```{r}
+#plot function
+add.trend.line <- function(x,y,d, ...){
+  fit <- lm(d[[y]] ~ d[[x]])
+  abline(fit, ...)
+}
+colour.by.category <- function(x, table) {
+  unname(table[x])
+}
+
+data.20152016 <- mydata[mydata$COHORT_YEAR == 20152016,]
+col.table <- c(CASSH = "tomato", CEPS="chocolate4", COB="dodgerblue2", HMCSE="darkgoldenrod1", UKCOH="green4", UNA ="blue4") 
+
+plot(FIRST_FALL_GPA ~ APPLICANT_TIER, data.20152016, cex=rescale(sqrt(data.20152016$APPLICANT_TIER), c(0.2, 10)), col= colour.by.category(data.20152016$ENTRY_COLLEGE, col.table), pch=21)
+plot(FIRST_FALL_GPA ~ APPLICANT_TIER, data.20152016,  col=col, pch=21)
+add.trend.line("APPLICANT_TIER", "FIRST_FALL_GPA", data.20152016[data.20152016$ENTRY_COLLEGE == "CASSH",], col=col.table["CASSH"])
+add.trend.line("APPLICANT_TIER", "FIRST_FALL_GPA", data.20152016[data.20152016$ENTRY_COLLEGE == "CEPS",], col=col.table["CEPS"])
+add.trend.line("APPLICANT_TIER", "FIRST_FALL_GPA", data.20152016[data.20152016$ENTRY_COLLEGE == "COB",], col=col.table["COB"])
+add.trend.line("APPLICANT_TIER", "FIRST_FALL_GPA", data.20152016[data.20152016$ENTRY_COLLEGE == "HMCSE",], col=col.table["HMCSE"])
+add.trend.line("APPLICANT_TIER", "FIRST_FALL_GPA", data.20152016[data.20152016$ENTRY_COLLEGE == "UKCOH",], col=col.table["UKCOH"])
+add.trend.line("APPLICANT_TIER", "FIRST_FALL_GPA", data.20152016[data.20152016$ENTRY_COLLEGE == "UNA",], col=col.table["UNA"])
+
+```
+```{r}
+# now use function add.trend.line
+add.trend.line <- function(x,y,d, ...){
+  fit <- lm(d[[y]] ~ d[[x]])
+  abline(fit, ...)
+}
+plot(FIRST_FALL_GPA ~ APPLICANT_TIER, data.20152016, log="x", col=col, pch=21)
+d_ply(data.20152016, .(ENTRY_COLLEGE), function(x) add.trend.line("APPLICANT_TIER", "FIRST_FALL_GPA", x, col=col.table[x$ENTRY_COLLEGE]))
+
+```
+### looping in r
+```{r}
+
+```
+
