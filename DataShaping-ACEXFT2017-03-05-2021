@@ -1,0 +1,51 @@
+
+
+library(readr)
+library(dplyr)
+
+#### mycrs_acex.csv
+COURSE_STUDENT_INSTRUCTION_SPRING21 <- read_csv("G:/Shared drives/HMCSE-PAM Lab/DATA 202101/202101/COURSE_STUDENT_INSTRUCTION_SPRING21.csv") %>% filter(Course_DEMO_TIME_FRAME>=201505) %>% 
+   select(STU_ID,Course_DEMO_TIME_FRAME,contains("term"),Course_CrsTitle, contains("combined"),Course_CrsPrefix,Course_CrsSuffix, contains("number"), contains("award"),contains("credit"))
+write.csv(COURSE_STUDENT_INSTRUCTION_SPRING21, "mycrs_acex.csv")
+
+#### myenc_acex.csv
+STU_ENROLLMENT_SPRING21 <- read_csv("G:/Shared drives/HMCSE-PAM Lab/DATA 202101/202101/STU_ENROLLMENT_SPRING21.csv") %>%  filter(Stu_DEMO_DATA_SOURCE=="SIF" & Stu_DEMO_TIME_FRAME>= 201505) %>% 
+  select(STU_ID, contains("demo"),contains("major"),Stu_CurrentTermLoad,contains("GPA"), contains("inst"), contains("total"),contains("credit"), contains("semester"),contains("coll"),contains("depart")) %>% arrange(Stu_DEMO_TIME_FRAME)
+write.csv(STU_ENROLLMENT_SPRING21, "myenc_acex.csv")
+
+#### mydeg_acex.csv
+STUDENT_DEGREE_SPRING21 <- read_csv("G:/Shared drives/HMCSE-PAM Lab/DATA 202101/202101/STUDENT_DEGREE_SPRING21.csv") %>%  select(STU_ID,  contains("data"), Deg_TermGranted, contains("desc"), contains("major"), contains("banner"))
+write.csv(STUDENT_DEGREE_SPRING21, "mydeg_acex.csv")
+
+#### matchedID
+CSE_MATCH_IDS_1_ <- read_csv("C:/Users/jsparks3/Downloads/CSE_MATCH_IDS (1).csv") # FTIC2015 to 2019
+
+
+#### ACEX aid year
+library(readxl)
+ACEX_Data_by_Cohort2_22_21 <- read_excel("G:/Shared drives/HMCSE-PAM Lab/ACEX/ACEX Data by Cohort2-22-21.xlsx")
+ACEX_Data_by_Cohort2_22_211 <- ACEX_Data_by_Cohort2_22_21[!is.na(ACEX_Data_by_Cohort2_22_21$`Aid Year`),]
+
+Final_id_cohort <- Final_acex_enc_DF %>% select(uwfid, cohort_year) %>% mutate(Cohort=ifelse(cohort_year=="17-18", "FTIC2017",
+                                                                                             ifelse(cohort_year=="18-19","FTIC2018",
+                                                                                                    ifelse(cohort_year=="19-20", "FTIC2019","FTIC2020")))) %>% select(uwfid, Cohort)
+Final_id_cohort_nodup <- Final_id_cohort[!duplicated(Final_id_cohort),] #1709
+
+
+acex_cleandata_STU_ID <- merge(acex_cleandata, CSE_MATCH_IDS_1_, by.x= "uwfid", by.y= "UNIV_ROW_ID", all.x = T ) %>% group_by(uwfid) %>% arrange(aid_year)%>%  mutate(Index=row_number())
+#colSums(is.na(acex_cleandata_STU_ID))
+cohort_size <- xtabs(~acex_cleandata_STU_ID$cohort_year+ acex_cleandata_STU_ID$Index)
+acex_cleandata_STU_ID_17to19 <- acex_cleandata_STU_ID %>% filter(cohort_year != "20-21")
+NAs <- acex_cleandata_STU_ID_17to19[which(is.na(acex_cleandata_STU_ID_17to19$STU_ID)),] %>% group_by(uwfid) %>% arrange(aid_year) %>% select(-Num_aidYear)
+Missing <- xtabs(~NAs$cohort_year+NAs$aid_year)
+
+acex_cleandata_STU_ID_17to19_nona <- acex_cleandata_STU_ID_17to19[!is.na(acex_cleandata_STU_ID_17to19$STU_ID),] #3,042
+acex_id_only <- acex_cleandata_STU_ID_17to19_nona %>% select(uwfid, STU_ID)
+all_id_acex_only <- acex_id_only[!duplicated(acex_id_only$uwfid),] #,1344
+Final_acex_enc_DFtwo <- merge( Final_acex_enc_DF, Final_id_cohort_nodup, by=c("uwfid"), all.x = T)
+
+Final_acex_enc_DF3 <- Final_acex_enc_DFtwo[!is.na(Final_acex_enc_DFtwo$Cohort),] %>% group_by(uwfid) %>% arrange(Index)
+# export data
+write.csv(Final_acex_enc_DF3, "V1_Final_acex_enc_DF.csv") 
+
+
