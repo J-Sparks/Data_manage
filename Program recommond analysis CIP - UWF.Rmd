@@ -1,0 +1,396 @@
+---
+title: "Change of Program"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+```
+
+```{css, echo=FALSE}
+.rpivotTable{overflow-x: scroll; }
+.rpivotTable{overflow-y: scroll; }
+.DataTable{"scrollX": true}
+.DataTable{"scrollY": true}
+
+```
+
+```{css, echo=FALSE}
+.scroll-200 {
+  max-height: 200px;
+  overflow-y: auto;
+  background-color: inherit;
+}
+```
+
+
+Science and Engineering (HMCSE)
+======================================================================
+
+columns {.tabset }
+----------------------------------------------------------------------
+
+```{r}
+setwd("G:/My Drive/#1_Jay's Space/Graduation-chaningMajorsApp/On Time Program Change -UWF")
+
+```
+
+
+```{r eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+
+library(dplyr)
+library(readr)
+### ID, college, departmentt, progrma cip code, cohort
+metric4anon <- read_csv("G:/Shared drives/HMCSE-PAM Lab/DATA 201901/metric4anon.csv")
+
+FTIC_201416_HMCSE <- metric4anon %>% filter((Cohort == 2014 |Cohort ==  2015 | Cohort == 2016) & Stu_CollegeBegin=="Science and Engineering") %>% select(STU_ID,Cohort,"Begin_col"=Stu_CollegeBegin,"Begin_Deprt"=Stu_DepartmentBegin,"Begin_CIP"=Stu_ProgramCIPCodeBegin) 
+glimpse(FTIC_201416_HMCSE)
+
+### UWF
+FTIC_201416_UWF <- metric4anon %>% filter((Cohort == 2014 |Cohort ==  2015 | Cohort == 2016)) %>% select(STU_ID,Cohort,"Begin_col"=Stu_CollegeBegin,"Begin_Deprt"=Stu_DepartmentBegin,"Begin_CIP"=Stu_ProgramCIPCodeBegin) 
+glimpse(FTIC_201416_UWF)
+table(FTIC_201416_UWF$Begin_col)
+
+### end  data
+STU_ENROLLMENT_SPRING21 <- read_csv("G:/Shared drives/HMCSE-PAM Lab/DATA 202101/202101/STU_ENROLLMENT_SPRING21.csv") %>% 
+  filter(Stu_DEMO_TIME_FRAME >= 201408  & Stu_DEMO_DATA_SOURCE == "SIF" )
+#glimpse(STU_ENROLLMENT_SPRING21)
+ENC_program_info <- STU_ENROLLMENT_SPRING21 %>% select(STU_ID,2,3,4,contains("CIP"), contains("classification"), contains("college"),contains("department"),contains("program"), contains("point"),contains("hours"),contains("load")) %>% filter(Stu_ClassificationCode <= 4)
+glimpse(ENC_program_info)
+### degree bachelor
+STUDENT_DEGREE_SPRING21 <- read_csv("G:/Shared drives/HMCSE-PAM Lab/DATA 202101/202101/STUDENT_DEGREE_SPRING21.csv") 
+DEG_program_info <- STUDENT_DEGREE_SPRING21 %>%
+  select(1,2,4,5,contains("CIP"), contains("college"), contains("department"), contains("program"), Deg_TermGranted, Deg_Desc) %>% filter(Deg_Desc=="Bachelor") %>% group_by (STU_ID) %>% arrange(Deg_DEMO_TIME_FRAME) %>% top_n(1, Deg_ProgramCIPCode)
+glimpse(DEG_program_info)
+
+
+### ID and enc
+ID_enc_info <- merge(FTIC_201416_UWF, ENC_program_info, by="STU_ID", all.x = T) #10532
+### ID + enc + deg
+ID_ENC_DEG_info <- merge(ID_enc_info,DEG_program_info, by="STU_ID", all.x = T ) #10532
+
+## begin CIP program desc
+
+ID_BEGIN_CIP <- ID_ENC_DEG_info %>% group_by(STU_ID) %>% filter(Stu_DEMO_TIME_FRAME==min(Stu_DEMO_TIME_FRAME)) %>% select(STU_ID, "Begin_col_code" = Stu_CollegeCode , "Begin_Deprt_code" = Stu_DepartmentCode, "Begin_CIP_code"= Stu_ProgramCIPCode, "Begin_CIP_desc"=Stu_ProgramCIPDesc)
+ID_BEGIN_CIP[ID_BEGIN_CIP$Begin_col_code=="00","Begin_col_code"] <- "UNA"
+unique(ID_BEGIN_CIP$Begin_col_code) ## oo for UNA
+ID_BEGIN_CIP1 <- ID_BEGIN_CIP[!duplicated(ID_BEGIN_CIP$STU_ID),]
+write.csv(ID_BEGIN_CIP1, "ID_BEGIN_CIP1.csv")
+
+
+############################################
+############# recode #######################
+############################################
+
+
+ID_ENC_DEG_info_add <- ID_ENC_DEG_info %>%  mutate(Gradu_Time=ifelse((Cohort==2014 & Deg_TermGranted <= 201805), "Gradu<=4",
+                         ifelse((Cohort==2014 & (Deg_TermGranted > 201805 & Deg_TermGranted <= 201905)),"Gradu=5",
+                                ifelse((Cohort==2014 & (Deg_TermGranted > 201905 & Deg_TermGranted <= 202005)),'Gradu=6',
+                                   ifelse((Cohort==2014 & (Deg_TermGranted > 202005 & Deg_TermGranted <= 202008)),'Gradu=7',    
+                                       ifelse((Cohort==2015 & Deg_TermGranted <= 201905), "Gradu<=4",
+                         ifelse((Cohort==2015 & (Deg_TermGranted > 201905 & Deg_TermGranted <= 202005)),"Gradu=5",
+                                ifelse((Cohort==2015 & (Deg_TermGranted > 202005 & Deg_TermGranted <= 202105)),'Gradu=6',
+                                       ifelse((Cohort==2016 & Deg_TermGranted <= 202005), "Gradu<=4",
+                         ifelse((Cohort==2016 & (Deg_TermGranted > 202005 & Deg_TermGranted <= 202105)),"Gradu=5",
+                                ifelse((Cohort==2016 & (Deg_TermGranted > 202105 & Deg_TermGranted <= 202205)),'Gradu=6',"Others")))))))))))  %>% group_by(STU_ID) %>% arrange(Stu_DEMO_TIME_FRAME) %>% 
+  mutate( ChangedProg=ifelse(Stu_ProgramCIPCode == lag(Stu_ProgramCIPCode, default = Stu_ProgramCIPCode[1]), 0,1)) %>% 
+  mutate(ChangedDeprt=ifelse(Stu_DepartmentCode == lag(Stu_DepartmentCode, default = Stu_DepartmentCode[1]), 0,1)) %>% 
+  mutate(ChangedCol=ifelse(Stu_College == lag(Stu_College, default = Stu_College[1]), 0,1))  %>% 
+  mutate(On_Time = ifelse(Gradu_Time == "Gradu<=4", "Yes", "No")) %>% 
+    mutate(CumChangedProg = cumsum(ChangedProg),
+          CumChangedDeprt = cumsum(ChangedDeprt),
+          CumChangedCol = cumsum(ChangedCol)) %>%
+ mutate( MaxCPTimes =  max(CumChangedProg),
+        MaxCDTimes= max(CumChangedDeprt),
+        MaxCCTimes= max(CumChangedCol)) %>%  
+  mutate(ChangeInd=ifelse(MaxCPTimes==0,"StayedProg", ifelse( (MaxCCTimes==0 & MaxCDTimes==0 & MaxCPTimes>0), "ChangedProg",ifelse((MaxCCTimes==0 & MaxCDTimes>0 ), "ChangedDepart", ifelse( (MaxCCTimes>0), "ChangedCol","Others"))))) %>% 
+   tidyr::separate(Stu_Term, c("Term","Year")) %>% 
+  group_by(STU_ID,Term,Year) %>% arrange(Term) %>% group_by(STU_ID, Term)  %>%  mutate(TermInd = row_number()) %>% 
+  mutate(TermYear=paste( TermInd,Term, sep = "/" ))
+
+
+## merge with begin cip code
+ID_ENC_DEG_info_add_CIP <- merge(ID_ENC_DEG_info_add, ID_BEGIN_CIP1, by="STU_ID", all.y = T)
+unique(ID_ENC_DEG_info_add_CIP$Begin_col_code)
+write.csv(ID_ENC_DEG_info_add_CIP, "ID_ENC_DEG_info_add_CIP.csv")
+
+```
+### The Most Popular Program Changes by Cohort
+
+* Data Description
+  + Cohort: 2014 to 2016
+  + Entered **HMCSE**
+  + FTIC who **changed** their program at least one time or more 
+  + Programs: the program the FTIC migrated to
+  + Y-axis: frequency of the changes
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(readr)
+library(dplyr)
+ID_ENC_DEG_info_add_CIP <- read.csv("G:/My Drive/#1_Jay's Space/Graduation-chaningMajorsApp/On Time Program Change -UWF/ID_ENC_DEG_info_add_CIP.csv", stringsAsFactors=TRUE) %>% select(-1)
+
+
+library(plotly)
+
+plotly1 <-   ID_ENC_DEG_info_add_CIP %>%  
+  filter(  ChangeInd != "StayedProg"  & Begin_col_code == "A" & ChangedProg >= 1) %>% 
+  count(Cohort, Stu_ProgramCIPDesc) %>% 
+  top_n(50, n) %>% 
+  plot_ly( x= ~Cohort, y=~n, color = ~Stu_ProgramCIPDesc , type = "bar")
+plotly1
+  
+
+
+
+### method a1
+
+```
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+#################
+### trim data  ###
+#################
+
+### earned degree, not stayedprog not earned program, first term to changed not in COLLEGE
+library(dplyr)
+onovertimebyprogrma1 <- ID_ENC_DEG_info_add_CIP %>% 
+   filter(On_Time == "Yes" | On_Time =="No") %>% group_by(STU_ID) %>%
+   filter( Stu_DEMO_TIME_FRAME <= Deg_DEMO_TIME_FRAME) %>%  
+   filter( ChangeInd != "StayedProg"  ) %>% 
+   filter(ChangedProg == 1) %>% 
+   top_n(1, ChangedProg) %>% 
+   mutate(FirstCP = TermYear ) %>% 
+   select( Begin_Deprt_code,Begin_CIP_code,Begin_CIP_desc,Begin_col_code, FirstCP, 
+            ChangeInd, Deg_ProgramCIPCode, Deg_ProgramCIPDesc, MaxCPTimes, On_Time)
+
+#### add classification---check
+library(dplyr)
+onovertimebyprogrma12 <- ID_ENC_DEG_info_add_CIP %>% 
+   filter(On_Time == "Yes" | On_Time =="No") %>% group_by(STU_ID) %>%
+   filter( Stu_DEMO_TIME_FRAME <= Deg_DEMO_TIME_FRAME) %>%  
+   filter( ChangeInd != "StayedProg"  ) %>% 
+   filter(ChangedProg == 1) %>% 
+   top_n(1, ChangedProg) %>% 
+   mutate(FirstCP = TermYear ) %>% 
+   dplyr::select( Begin_Deprt_code,Begin_CIP_code,Begin_CIP_desc,Begin_col_code, FirstCP, "FirstCPClassfication" = Stu_Classification,
+            ChangeInd, Deg_ProgramCIPCode, Deg_ProgramCIPDesc, MaxCPTimes, On_Time)
+
+
+unique(onovertimebyprogrma1$FirstCPClassfication)
+### Checking
+glimpse(onovertimebyprogrma1)
+table(onovertimebyprogrma1$Begin_col_code, onovertimebyprogrma1$On_Time)
+df_test <- onovertimebyprogrma1
+df_test$MaxCPTimes <- as.integer(df_test$MaxCPTimes)
+table(df_test$MaxCPTimes, df_test$On_Time)
+library(naivebayes)
+# To modify the variables go to 123 line
+naive.model <-  function(x){
+  naive_bayes( On_Time ~ Begin_CIP_desc + Deg_ProgramCIPDesc + ChangeInd + FirstCP + MaxCPTimes+        
+               + Begin_Deprt_code + Begin_col_code, 
+               data = df_test, usepoisson = T)
+}
+
+
+#if("dplyr" %in% (.packages())){
+#          detach("package:dplyr", unload=TRUE) 
+#          detach("package:plyr", unload=TRUE) 
+#}
+#----------------------------------
+library(rsample)  # data splitting 
+library(caret)    # implementing with caret
+library(naivebayes)
+onovertimebyprogrma1$MaxCPTimes <- as.integer(onovertimebyprogrma1$MaxCPTimes)
+all_NB_test <- naive_bayes(On_Time ~ Begin_col_code+ Begin_Deprt_code+ Begin_CIP_desc+FirstCP+ChangeInd+Deg_ProgramCIPDesc +MaxCPTimes, data = onovertimebyprogrma1, usepoisson = T)
+confusionMatrix(predict(all_NB_test), onovertimebyprogrma1$On_Time)
+#Accuracy : 0.7067 
+
+
+
+#-----------------------------------
+split_dt_test <- split.data.frame(df_test, df_test$Begin_col_code)
+
+split_dt_test[["A"]] #A B H M P UNA
+
+fitted.model_A <-  naive_bayes(On_Time ~ Begin_CIP_desc + Deg_ProgramCIPDesc + ChangeInd + FirstCP + MaxCPTimes+ 
+               + Begin_Deprt_code , 
+               data = split_dt_test[["A"]], usepoisson = T)
+confusionMatrix(predict(fitted.model_A), split_dt_test[["A"]]$On_Time) # Accuracy : 0.757 
+
+fitted.model_B <-  naive_bayes(On_Time ~ Begin_CIP_desc + Deg_ProgramCIPDesc + ChangeInd + FirstCP + MaxCPTimes+ 
+               + Begin_Deprt_code , 
+               data = split_dt_test[["B"]], usepoisson = T)
+fitted.model_H <-  naive_bayes(On_Time ~ Begin_CIP_desc + Deg_ProgramCIPDesc + ChangeInd + FirstCP + MaxCPTimes+ 
+               + Begin_Deprt_code , 
+               data = split_dt_test[["H"]], usepoisson = T)
+
+fitted.model_M <-  naive_bayes(On_Time ~ Begin_CIP_desc + Deg_ProgramCIPDesc + ChangeInd + FirstCP + MaxCPTimes+ 
+               + Begin_Deprt_code , 
+               data = split_dt_test[["M"]], usepoisson = T)
+fitted.model_P <-  naive_bayes(On_Time ~ Begin_CIP_desc + Deg_ProgramCIPDesc + ChangeInd + FirstCP + MaxCPTimes+ 
+               + Begin_Deprt_code , 
+               data = split_dt_test[["P"]], usepoisson = T)
+
+fitted.model_UNA <-  naive_bayes(On_Time ~ Begin_CIP_desc + Deg_ProgramCIPDesc + ChangeInd + FirstCP + MaxCPTimes+ 
+               + Begin_Deprt_code , 
+               data = split_dt_test[["UNA"]], usepoisson = T)
+
+
+#fitted.model_B <-  dlply(split_dt_test[["B"]], .(Begin_Deprt_code), naive.model)
+#library(plyr)
+#fitted.model_test <-  dlply(df_test, .(Begin_Deprt_code), naive.model)
+
+confusionMatrix(predict(fitted.model_A), split_dt_test[["A"]]$On_Time) # Accuracy : 0.757
+confusionMatrix(predict(fitted.model_B), split_dt_test[["B"]]$On_Time) # Accuracy : 0.7456 
+confusionMatrix(predict(fitted.model_H), split_dt_test[["H"]]$On_Time) # Accuracy : 0.9141 
+confusionMatrix(predict(fitted.model_M), split_dt_test[["M"]]$On_Time) # Accuracy : 0.7481 
+confusionMatrix(predict(fitted.model_P), split_dt_test[["P"]]$On_Time) # Accuracy : 0.8298 
+
+
+
+```
+
+
+### Pivot - Entry and Exit 
+
+* Data Description
+  + Cohort: 2014 to 2016
+  + Begin CIPProgram: entry program
+  + Deg Program: ended program
+  + Change Index: **stayed** in their program / changed between **programs** in their department / changed **between department** / changed between **college**
+  + Graduation Time: on-time ( <= 4 years) and over-time ( > 4 years)
+* This pivot table included not just changed program, also include stayed in their program FTIC
+* You may notice some FTIC changed department or college but ended at the started program
+
+```{r}
+
+pivot_df <-  ID_ENC_DEG_info_add_CIP %>% group_by(STU_ID) %>% arrange(Stu_DEMO_TIME_FRAME) %>% 
+  mutate(STU_ID_Index = row_number()) %>% 
+  filter(On_Time == "Yes" | On_Time =="No") %>%  filter( Stu_DEMO_TIME_FRAME== max(Stu_DEMO_TIME_FRAME)) 
+
+library(rpivotTable)
+rpivotTable::rpivotTable(pivot_df, aggregatorName = "Count",
+                         rows = c("Begin_CIP_desc", "ChangeInd"),
+                         cols = c("Deg_ProgramCIPDesc","On_Time"),
+                         subtotals = T,
+                         rendererName = "Table With Subtotal Col Heatmap")
+
+```
+
+
+
+```{r}
+### Table - Proportion of Ended Program
+
+HMCSE <-  fitted.model_A[["tables"]][["Deg_ProgramCIPDesc"]]
+HMCSE_DF <- as.data.frame.matrix(HMCSE, row.names = T)
+HMCSE_DF$EndedProgram <- rownames(HMCSE)
+colnames(HMCSE_DF) <-  colnames(HMCSE_DF)
+colnames(HMCSE_DF) <- c("PropOverTime","PropOnTime","EndedProgram")
+
+library(DT)
+HMCSE_t <- datatable(HMCSE_DF, extensions = "Buttons",
+          filter = "top",
+          options = list(dom="Blfrtip",buttons=c("copy","csv","excel","pdf","print"), lengthMenu=list(c(10,25,50,-1), c(10,25,50,"All")),pageLength=25)) %>% 
+  formatRound(c ("PropOnTime","PropOverTime"), digits = 6) %>% 
+  formatStyle( "PropOnTime", color = styleInterval(0.03000, c("black","blue"))) %>% 
+  formatStyle( "PropOverTime", color = styleInterval(0.028, c("black","red")))
+
+#HMCSE_t
+```
+
+
+### Proportion On / Over Time by Ended Program
+
+* Proportion of on-time (over-time) program determined by total number of on-time (over-time) FTIC
+* For example: 
+  -15.46% (12.3%) of on-time (over-time) FTIC are earned biomedical science degree after changed their program
+
+
+```{r message=FALSE, warning=FALSE}
+library(plotly)
+figHMCSE <- plot_ly(HMCSE_DF, x = ~EndedProgram, y = ~PropOnTime, type = 'bar', name = 'On-Time', marker = list(color = 'darkblue'))
+figHMCSE <- figHMCSE %>% add_trace(y = ~PropOverTime, name = 'Over-Time', marker = list(color = 'red')) %>% 
+ layout(xaxis = list(title = "Proportion of Ended Program", tickangle = -45),
+         yaxis = list(title = "Proportion"),
+         margin = list(b = 100),
+         barmode = 'group')
+figHMCSE
+
+
+```
+
+
+### Proportion of on / Over-Time by Changed Time
+
+* Changed Time: Semester when the change was applied for 
+  + For example: 1/Spring means student applied in their first Spring after entering UWF
+
+```{r}
+HMCSE_ChangedTime <-  fitted.model_A[["tables"]][["FirstCP"]]
+HMCSE_ChangedTime_DF <- as.data.frame.matrix(HMCSE_ChangedTime, row.names = T)
+HMCSE_ChangedTime_DF$ChangedTime <- rownames(HMCSE_ChangedTime)
+colnames(HMCSE_ChangedTime_DF) <-  colnames(HMCSE_ChangedTime_DF)
+colnames(HMCSE_ChangedTime_DF) <- c("PropOverTime","PropOnTime","ChangedTime")
+
+library(DT)
+HMCSE_ChangedTime <- datatable(HMCSE_ChangedTime_DF[1:10,], extensions = "Buttons",
+          filter = "top",
+          options = list(dom="Blfrtip",buttons=c("copy","csv","excel","pdf","print"),  lengthMenu=list(c(10,25,50,-1), c(10,25,50,"All")),pageLength=25)) %>% 
+  formatRound(c ("PropOnTime","PropOverTime"), digits = 6) %>% 
+  formatStyle( "PropOnTime", color = styleInterval(0.10, c("black","blue"))) %>% 
+  formatStyle( "PropOverTime", color = styleInterval(0.10, c("black","red")))
+
+HMCSE_ChangedTime
+```
+
+### Probability (PMF) by Total Number of Program Changes 
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ plot(fitted.model_A ,"MaxCPTimes", prob="conditional" )
+
+```
+
+
+
+```{r eval=FALSE, include=FALSE}
+
+
+#Arts, Social Sciences and Humanities (CASSH)
+#======================================================================
+
+#columns {.tabset }
+
+
+#* Data Description
+#  + Cohort: 2014 to 2016
+#  + Entered **CASSH**
+#  + FTIC who **changed** their program at least one time and **earned bachelor's degree by Fall 2020**
+#  + Ended Degree Programs: programs from **anywhere in UWF**
+#  + Graduation Time: on-time ( <= 4 years) and over-time ( > 4 years)
+  
+  
+### Table - Proportion of Ended Program
+
+H <-  fitted.model_H[["tables"]][["Deg_ProgramCIPDesc"]]
+H_DF <- as.data.frame.matrix(H, row.names = T)
+H_DF$EndedProgram <- rownames(H)
+colnames(H_DF) <-  colnames(H_DF)
+colnames(H_DF) <- c("PropOverTime","PropOnTime","EndedProgram")
+
+library(DT)
+H_t <- datatable(H_DF, extensions = "Buttons",
+          filter = "top",
+          options = list(dom="Blfrtip",buttons=c("copy","csv","excel","pdf","print"), lengthMenu=list(c(10,25,50,-1), c(10,25,50,"All")),pageLength=25)) %>% 
+  formatRound(c ("PropOnTime","PropOverTime"), digits = 6) %>% 
+  formatStyle( "PropOnTime", color = styleInterval(0.03000, c("black","blue"))) %>% 
+  formatStyle( "PropOverTime", color = styleInterval(0.028, c("black","red")))
+
+#H_t
+```
