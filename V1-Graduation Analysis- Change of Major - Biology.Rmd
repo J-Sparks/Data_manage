@@ -1,0 +1,675 @@
+---
+title: "Graduation Analysis by Program Change: Biology"
+output: 
+ 
+ flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+ 
+---
+
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(gtsummary)
+library(readr)
+library(dplyr)
+metric4anon <- read_csv("G:/Shared drives/HMCSE-PAM Lab/DATA 201901/metric4anon.csv")
+
+```
+
+
+```{css, echo=FALSE}
+.rpivottable{overflow-x: scroll; }
+.DataTable{"scrollX": true}
+.DataTable{"scrollY": true}
+
+```
+
+```{css, echo=FALSE}
+.scroll-100 {
+  max-height: 100px;
+  overflow-y: auto;
+  background-color: inherit;
+}
+```
+
+Descriptive Statistics Analysis
+=======================================================================
+
+
+
+Column {.tabset .tabset-fade }
+-----------------------------------------------------------------------
+
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+
+FTIC_201416_BIO <- metric4anon %>% filter((Cohort == 2014 |Cohort ==  2015 | Cohort == 2016) & Stu_DepartmentBegin=="Biology") %>% select(STU_ID,Cohort,Stu_DepartmentBegin) 
+
+Total_B_cohort <- tbl_cross(FTIC_201416_BIO,row=Cohort, col=Stu_DepartmentBegin   ,percent = "row") %>% bold_labels() %>% 
+  modify_spanning_header(all_stat_cols() ~ "**Number of Entered FTIC in Biology Department from 2014 to 2016**")
+Total_B_cohort
+```
+
+### Data Description
+
+* Cohort: 2014 to 2016
+* College: HMCSE
+* Department: Biology
+* Programs:
+  + Biology - General
+  + Biology - Prepropessional
+  + Biomedical Sciences
+  + Marine Biology
+  
+**Contents**
+  
+  + Descriptive Statistics Analysis
+    - Number of Graduates by graduation Time
+    - Number of Change in Program / Department / College by completion
+    - Proportion of Exit Program by Entry 
+    - Proportion of Exit Program / Department / College by Graduation Time
+    - First Program / Department / College Change by FTIC Classification
+  
+  + Prediction of On-Time Graduation
+    - Using Naive Bayes Classification
+    - Probability of Graduating on-time
+    
+  
+
+`r Total_B_cohort`
+
+
+
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+### enc
+STU_ENROLLMENT_SPRING21 <- read.csv("G:/Shared drives/HMCSE-PAM Lab/DATA 202101/202101/STU_ENROLLMENT_SPRING21.csv") %>% filter(Stu_DEMO_TIME_FRAME >= 201408 & Stu_DEMO_DATA_SOURCE=="SIF") %>% filter(Stu_ClassificationCode <= 4) 
+
+### deg
+DEGREE_SPRING21 <- read.csv("G:/Shared drives/HMCSE-PAM Lab/DATA 202101/202101/STUDENT_DEGREE_SPRING21.csv") 
+STUDENT_DEGREE_SPRING21 <- read.csv("G:/Shared drives/HMCSE-PAM Lab/DATA 202101/202101/STUDENT_DEGREE_SPRING21.csv") %>% select(STU_ID, contains("granted"),Deg_Desc,Deg_BannerProgramCode,contains("program"),contains("college"),contains("departm")) %>% filter(Deg_Desc=="Bachelor") %>% group_by(STU_ID) %>% filter(Deg_TermGranted==max(Deg_TermGranted)) %>% top_n(1, Deg_BannerProgram)
+
+### datashaping
+FTIC_201416_BIO_enc <- merge(STU_ENROLLMENT_SPRING21,FTIC_201416_BIO, by="STU_ID", all.y = T) %>% 
+  select(STU_ID,Cohort,Stu_DepartmentBegin,Stu_DEMO_TIME_FRAME,Stu_Term,contains("classification") ,contains("college"),contains("department"),contains("program") ,contains("total"))
+
+FTIC_201416_BIO_enc_deg <- merge(FTIC_201416_BIO_enc,STUDENT_DEGREE_SPRING21, by="STU_ID", all.x = T) %>% group_by(STU_ID) %>% 
+  arrange(Stu_DEMO_TIME_FRAME)
+FTIC_201416_BIO_enc_deg #674
+```
+
+### Earned Bachelor Degree by Fall 2020
+
+* Increases in On-time Graduation by Cohort Year
+  + There are 52, 66, and 87 from 2014 to 2016
+  + See chart below:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+FTIC_201416_BIO_enc_deg_B <- FTIC_201416_BIO_enc_deg %>% filter(Deg_Desc == "Bachelor") %>% 
+  mutate(Gradu_Time=ifelse((Cohort==2014 & Deg_TermGranted <= 201805), "Gradu<=4",
+                         ifelse((Cohort==2014 & (Deg_TermGranted > 201805 & Deg_TermGranted <= 201905)),"Gradu=5",
+                                ifelse((Cohort==2014 & (Deg_TermGranted > 201905 & Deg_TermGranted <= 202005)),'Gradu=6',
+                                   ifelse((Cohort==2014 & (Deg_TermGranted > 202005 & Deg_TermGranted <= 202008)),'Gradu=7',    
+                                       ifelse((Cohort==2015 & Deg_TermGranted <= 201905), "Gradu<=4",
+                         ifelse((Cohort==2015 & (Deg_TermGranted > 201905 & Deg_TermGranted <= 202005)),"Gradu=5",
+                                ifelse((Cohort==2015 & (Deg_TermGranted > 202005 & Deg_TermGranted <= 202105)),'Gradu=6',
+                                       ifelse((Cohort==2016 & Deg_TermGranted <= 202005), "Gradu<=4",
+                         ifelse((Cohort==2016 & (Deg_TermGranted > 202005 & Deg_TermGranted <= 202105)),"Gradu=5",
+                                ifelse((Cohort==2016 & (Deg_TermGranted > 202105 & Deg_TermGranted <= 202205)),'Gradu=6',"Others"))))))))))) %>%  mutate(EarnedBDeg=rep("Bachelor"))
+
+#length(unique(FTIC_201416_BIO_enc_deg_B$STU_ID)) #305
+FTIC_bachelor <- FTIC_201416_BIO_enc_deg_B %>% group_by(STU_ID) %>% top_n(1, Stu_DEMO_TIME_FRAME)
+tbl_cross(FTIC_bachelor,  row=Cohort ,col=Gradu_Time, percent = "row")%>% 
+  modify_spanning_header(all_stat_cols() ~ "**Graudation Time (by Fall 2020)**")
+
+#others <- FTIC_201416_BIO_enc_deg_B[FTIC_201416_BIO_enc_deg_B$On_Time =="Others",];others for gradu=7 FT14
+```
+
+
+```{r eval=FALSE, include=FALSE}
+FTIC_201416_BIO_enc_deg_notB <- FTIC_201416_BIO_enc_deg[which(is.na(FTIC_201416_BIO_enc_deg$Deg_Desc)),] %>% group_by(STU_ID) %>% top_n(1,Stu_DEMO_TIME_FRAME) %>% filter(Stu_DEMO_TIME_FRAME==202008)
+#length(unique(FTIC_201416_BIO_enc_deg_notB$STU_ID))#3369
+drop_term <- tbl_cross(FTIC_201416_BIO_enc_deg_notB, row= Stu_DEMO_TIME_FRAME, col=Cohort, percent = "col")
+drop_term
+
+```
+
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+
+#### CODE
+library(dplyr)
+library(gtsummary)
+FTIC_201416_BIO_enc_deg_B_changed <- FTIC_201416_BIO_enc_deg_B %>%  group_by(STU_ID) %>%
+  mutate( ChangedProg=ifelse(Stu_ProgramCIPCode == lag(Stu_ProgramCIPCode, default = Stu_ProgramCIPCode[1]), 0,1)) %>% 
+  mutate(ChangedDeprt=ifelse(Stu_DepartmentCode == lag(Stu_DepartmentCode, default = Stu_DepartmentCode[1]), 0,1)) %>% 
+  mutate(ChangedCol=ifelse(Stu_College == lag(Stu_College, default = Stu_College[1]), 0,1)) 
+
+### Total numbers of changed
+Repeated <- FTIC_201416_BIO_enc_deg_B_changed %>% select(STU_ID, ChangedProg,ChangedDeprt,ChangedCol ) %>% group_by(STU_ID) %>% 
+  dplyr::summarise(TotalChangedProg=sum(ChangedProg),TotalChangedDepart=sum(ChangedDeprt),TotalChangedCol=sum(ChangedCol))
+ 
+
+### merged with repeated time
+FTIC_201416_BIO_enc_deg_B_changed_total <- merge(FTIC_201416_BIO_enc_deg_B_changed, Repeated, by="STU_ID", all.x = T) %>% group_by(STU_ID) %>% arrange(Stu_DEMO_TIME_FRAME) %>%  group_by(STU_ID) %>% mutate(On_Time=ifelse(Gradu_Time=="Gradu<=4", "Yes", "No")) 
+
+#xtabs(~FTIC_201416_BIO_enc_deg_B_changed_total$On_Time+FTIC_201416_BIO_enc_deg_B_changed_total$Stu_DEMO_TIME_FRAME+FTIC_201416_BIO_enc_deg_B_changed_total$Cohort)
+
+
+## 1st Term GPA
+
+#glimpse(FTIC_201416_BIO_enc_deg_B_changed_total)
+```
+
+
+###  Total Numebr of Program Changes 
+
+* Overall 51% (105) of FTIC who completed a bachelor's degree in four years changed program at least one time
+   + See chart below:
+
+```{r}
+
+### Numers of changes and graduation time 
+Total_gradu_time <- FTIC_201416_BIO_enc_deg_B_changed_total %>% group_by(STU_ID) %>% top_n(1, Stu_DEMO_TIME_FRAME)
+
+
+#changed_6times <- FTIC_201416_BIO_enc_deg_B_changed_total[FTIC_201416_BIO_enc_deg_B_changed_total$STU_ID=="7E4B110FD728E884B9389D8BBC408541A5CDD649",];changed_6times
+
+
+library(gtsummary)
+tbl_cross(Total_gradu_time,row = TotalChangedProg, col= Gradu_Time, percent = "col") %>% 
+  modify_spanning_header(all_stat_cols() ~ "**Graudation Time vs. Number of Program Change**")
+```
+
+### Total Numebr of Department Changes
+
+* Overall 48% (98) of FTIC who completed a bachelor's degree in four years didn't change their department
+   + See chart below:
+
+```{r}
+tbl_cross(Total_gradu_time,row = TotalChangedDepart, col= Gradu_Time, percent = "col") %>% 
+  modify_spanning_header(all_stat_cols() ~ "**Graudation Time vs. Number of Department Change**")
+
+```
+
+### Total Number of College Changes
+
+* Overall 52% (107) of FTIC who completed a bachelor's degree in four years didn't change their college
+   + See chart below:
+
+```{r echo=FALSE}
+tbl_cross(Total_gradu_time,row = TotalChangedCol, col= Gradu_Time, percent = "col") %>% 
+  modify_spanning_header(all_stat_cols() ~ "**Graudation Time vs. Number of College Change**")
+
+```
+
+### Entry and Exit program
+
+* Overall 15%, 17%, 43%, and 50% of FTIC completed a bachelor's degree by Fall 2020 in their admitted program
+   + See chart below:
+      + X-axis: exit program
+      + Y-axis: entry program
+      + For example, a total of 10 FTIC (15%) that entered biology-general finished their degree in that program.
+
+```{r echo=FALSE}
+
+enter_program_end_program <- FTIC_201416_BIO_enc_deg_B_changed_total %>% group_by(STU_ID) %>% filter(Stu_DEMO_TIME_FRAME == min(Stu_DEMO_TIME_FRAME))%>% 
+  tbl_cross(row=Stu_BannerProgramDesc , col=Deg_BannerProgram, percent = "row") %>% 
+  modify_spanning_header(all_stat_cols() ~ "**Entered Program vs. Ended Program (by Fall 2020)**")
+enter_program_end_program
+
+```
+
+
+### Graduation Time by Exit Department
+
+* Overall 99 (66%) of FTIC who entered biology department and completed their degree finished on-time.
+   + See chart below:
+      + X-axis: exit department
+      + Y-axis: graduation time
+
+
+```{r echo=FALSE}
+
+end_depart <- FTIC_201416_BIO_enc_deg_B_changed_total %>% group_by(STU_ID) %>% filter(Stu_DEMO_TIME_FRAME == min(Stu_DEMO_TIME_FRAME))%>% 
+  tbl_cross(row=On_Time  , col=Deg_Department, percent = "col") %>% 
+  modify_spanning_header(all_stat_cols() ~ "**Graduation Time vs. Ended Department**")
+end_depart
+```
+
+### Graduation Time by Exit College
+
+* Overall 109 (65%) of FTIC who entered biology department and completed their degree in HMCSE finished on-time.
+   + See chart below:
+      + X-axis: graduation time
+      + Y-axis: exit college 
+
+
+```{r echo=FALSE}
+#glimpse(FTIC_201416_BIO_enc_deg_B_changed_total)
+
+end_coll_gradutime <- FTIC_201416_BIO_enc_deg_B_changed_total %>% group_by(STU_ID) %>% filter(Stu_DEMO_TIME_FRAME == min(Stu_DEMO_TIME_FRAME))%>% 
+  tbl_cross(row=Deg_College , col=On_Time, percent = "row")%>% 
+  modify_spanning_header(all_stat_cols() ~ "**Entered College vs. Ended College**")
+end_coll_gradutime
+```
+
+### First Program change by FTIC Classification
+
+* Overall 87 (29%) of FTIC who earned their degree changed their program during sophomore year
+   + See chart below:
+      + X-axis: indicators of change (Yes/No)
+      + Y-axis: classification 
+
+
+```{r}
+
+
+#unique(FTIC_201416_BIO_enc_deg_B_changed_total$Stu_ProgramCIPDesc)# #86 #47
+
+### 1st time change of program cip
+Change1st_progCIP <- FTIC_201416_BIO_enc_deg_B_changed_total  %>% group_by(STU_ID) %>% top_n(1, ChangedProg ) %>% mutate(ChangedProg_Ind=ifelse(ChangedProg>0, "Yes","No"))%>% filter(Stu_DEMO_TIME_FRAME == min(Stu_DEMO_TIME_FRAME)) %>% select(STU_ID, "FCProg_Class"=Stu_Classification , "FCProg_UniHrs"=Stu_TotalUniversityHours, "FCProg_UWFHrs"=Stu_TotalInstHours, "FCPorg_TGP"=Stu_TotalInstGradePoints, ChangedProg_Ind) %>%  mutate(FCProg_GPA=round(FCPorg_TGP/FCProg_UWFHrs,digits = 4))#305
+
+### on-time and FCProg
+Change1st_progCIP_ontime <- FTIC_201416_BIO_enc_deg_B_changed_total  %>% group_by(STU_ID) %>% top_n(1, ChangedProg ) %>% mutate(ChangedProg_Ind=ifelse(ChangedProg>0, "Yes","No"))%>% filter(Stu_DEMO_TIME_FRAME == min(Stu_DEMO_TIME_FRAME)) %>% select(STU_ID, "FCProg_Class"=Stu_Classification , "FCProg_UniHrs"=Stu_TotalUniversityHours, "FCProg_UWFHrs"=Stu_TotalInstHours, "FCPorg_TGP"=Stu_TotalInstGradePoints, ChangedProg_Ind,On_Time) %>%  mutate(FCProg_GPA=round(FCPorg_TGP/FCProg_UWFHrs,digits = 4))
+
+### cross tab with p-value
+tbl_cross(Change1st_progCIP_ontime, row=FCProg_Class, col=ChangedProg_Ind, percent ="cell" ) %>% add_p()
+
+### merge with total data
+FTIC_201416_BIO_enc_deg_B_changed_total_FCProg <- merge(FTIC_201416_BIO_enc_deg_B_changed_total, Change1st_progCIP, by="STU_ID", all.x = T )
+
+
+
+
+```
+
+### First Department change by FTIC Classification
+
+* Overall 67 (22%) of FTIC who earned their degree changed their department during sophomore year
+   + See chart below:
+      + X-axis: indicators of change (Yes/No) 
+      + Y-axis: classification
+
+```{r echo=FALSE}
+### on-time and FCDeprt
+Change1st_Deprt_ontime <- FTIC_201416_BIO_enc_deg_B_changed_total  %>% group_by(STU_ID) %>% top_n(1, ChangedDeprt )   %>% mutate(ChangedDeprt_Ind=ifelse(ChangedProg>0, "Yes","No"))%>% filter(Stu_DEMO_TIME_FRAME == min(Stu_DEMO_TIME_FRAME)) %>% select(STU_ID, "FCDepart_Class"=Stu_Classification , "FCDepart_UniHrs"=Stu_TotalUniversityHours, "FCDepart_UWFHrs"=Stu_TotalInstHours, "FCDepart_TGP"=Stu_TotalInstGradePoints,ChangedDeprt_Ind, On_Time) %>%  mutate(FCDepart_GPA=round(FCDepart_TGP/FCDepart_UWFHrs,digits = 4))
+
+### cross tab with p-value
+tbl_cross(Change1st_Deprt_ontime, row=FCDepart_Class, col=ChangedDeprt_Ind, percent ="cell" ) %>% add_p()
+
+
+### 1st time change of department
+
+Change1st_Deprt <- FTIC_201416_BIO_enc_deg_B_changed_total  %>% group_by(STU_ID) %>% top_n(1, ChangedDeprt ) %>% mutate(ChangedDeprt_Ind=ifelse(ChangedProg>0, "Yes","No"))%>% filter(Stu_DEMO_TIME_FRAME == min(Stu_DEMO_TIME_FRAME)) %>% select(STU_ID, "FCDepart_Class"=Stu_Classification , "FCDepart_UniHrs"=Stu_TotalUniversityHours, "FCDepart_UWFHrs"=Stu_TotalInstHours, "FCDepart_TGP"=Stu_TotalInstGradePoints,ChangedDeprt_Ind) %>%  mutate(FCDepart_GPA=round(FCDepart_TGP/FCDepart_UWFHrs,digits = 4))
+
+### merge with total data set: FTIC_201416_BIO_enc_deg_B_changed_total_FCProg
+FTIC_201416_BIO_enc_deg_B_changed_total_FCProg_FCDepart <- merge(FTIC_201416_BIO_enc_deg_B_changed_total_FCProg, Change1st_Deprt, by="STU_ID", all.x = T )
+
+```
+
+### First College change by FTIC Classification
+
+* Overall 57 (19%) of FTIC who earned their degree changed their college during sophomore year
+   + See chart below:
+      + X-axis: indicators of change (Yes/No) classification
+      + Y-axis: classification
+
+```{r echo=FALSE}
+### on-time and FCDeprt
+library(dplyr)
+Change1st_col_ontime <- FTIC_201416_BIO_enc_deg_B_changed_total  %>% group_by(STU_ID) %>% top_n(1, ChangedCol ) %>% mutate(ChangedCol_Ind=ifelse(ChangedCol>0, "Yes","No")) %>%  filter(Stu_DEMO_TIME_FRAME == min(Stu_DEMO_TIME_FRAME)) %>% select(STU_ID, "FCCol_Class"=Stu_Classification , "FCCol_UniHrs"=Stu_TotalUniversityHours, "FCCol_UWFHrs"=Stu_TotalInstHours, "FCCol_TGP"=Stu_TotalInstGradePoints, On_Time,ChangedCol_Ind, "FCCol_Prog"=Stu_ProgramCIPDesc, "FCCol_Col"=Stu_College, "FCCol_Deprt"=Stu_Department) %>%  mutate(FCDepart_GPA=round(FCCol_TGP/FCCol_UWFHrs,digits = 4))
+
+### cross tab with p-value
+tbl_cross(Change1st_col_ontime, row=FCCol_Class, col=ChangedCol_Ind, percent ="cell" ) %>% add_p()
+
+
+### 1st time change of department
+
+Change1st_Col <-FTIC_201416_BIO_enc_deg_B_changed_total %>% group_by(STU_ID) %>% top_n(1, ChangedCol ) %>% mutate(ChangedCol_Ind=ifelse(ChangedCol>0, "Yes","No"))%>% filter(Stu_DEMO_TIME_FRAME == min(Stu_DEMO_TIME_FRAME)) %>% select(STU_ID, "FCCol_Class"=Stu_Classification , "FCCol_UniHrs"=Stu_TotalUniversityHours, "FCCol_UWFHrs"=Stu_TotalInstHours, "FCCol_TGP"=Stu_TotalInstGradePoints,ChangedCol_Ind, "FCCol_Prog"=Stu_ProgramCIPDesc, "FCCol_Col"=Stu_College, "FCCol_Deprt"=Stu_Department) %>%  mutate(FCCol_GPA=round(FCCol_TGP/FCCol_UWFHrs,digits = 4))
+
+### merge with total data set: FTIC_201416_BIO_enc_deg_B_changed_total_FCProg
+FTIC_201416_BIO_enc_deg_B_changed_total_FCProg_FCDepart_FCCol <- merge(FTIC_201416_BIO_enc_deg_B_changed_total_FCProg_FCDepart, Change1st_Col, by="STU_ID", all.x = T )
+
+```
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+### last term earned hours
+lasttermhrs <- STU_ENROLLMENT_SPRING21 %>% select(STU_ID,Stu_DEMO_TIME_FRAME,"LastTermEarnedHrs"=Stu_GPATermHours )
+  
+  
+Final_DF_ChangeMajors <- FTIC_201416_BIO_enc_deg_B_changed_total_FCProg_FCDepart_FCCol %>% group_by(STU_ID)  %>% mutate(ChangedProg3 = ifelse(TotalChangedProg==0, "0Time", ifelse(TotalChangedProg==1, "1Time",ifelse(TotalChangedProg==2, "2Times", 
+                                                                                                                                                                                                                       ifelse(TotalChangedProg==3, "3Time",">=4Times"))))) %>% 
+  mutate(TimeGraduate=ifelse(Cohort==2014, rep(201805),
+                            ifelse(Cohort==2015,rep(201905),202005)))  
+### merge with Final df change majors
+IncludeLastTermHours <- merge(FTIC_201416_BIO_enc_deg_B_changed_total_FCProg_FCDepart_FCCol, lasttermhrs, by.x=c("STU_ID", "Deg_TermGranted"), by.y=c("STU_ID","Stu_DEMO_TIME_FRAME"), all.x = T) %>% mutate(ChangeInd=ifelse(TotalChangedProg==0,"StayedProg",
+                                                                                                                                                                                      ifelse( (TotalChangedCol==0 & TotalChangedDepart==0 & TotalChangedProg>0), "ChangedProg",
+                                                                                                                                                                                             ifelse( (TotalChangedCol==0 & TotalChangedDepart>0 ), "ChangedDepart",
+                                                                                                                                                                                                     ifelse( (TotalChangedCol>0), "ChangedCol","Others")))))
+
+xtabs(~ IncludeLastTermHours$ChangeInd)
+hist(IncludeLastTermHours$LastTermEarnedHrs)
+### 3rd year all
+Time3rdYear <-  Final_DF_ChangeMajors %>% group_by(STU_ID) %>% filter(Stu_DEMO_TIME_FRAME <= TimeGraduate ) %>% top_n(1, Stu_DEMO_TIME_FRAME )
+
+### #rd year on time
+Time3rdYear_ontime <-  Final_DF_ChangeMajors %>% group_by(STU_ID) %>% filter(Stu_DEMO_TIME_FRAME <= TimeGraduate ) %>% top_n(1, Stu_DEMO_TIME_FRAME ) %>% filter(On_Time=="Yes")
+mean(Time3rdYear_ontime$Stu_TotalUniversityHours) #124.061
+
+LastTermInfo <- IncludeLastTermHours %>% group_by(STU_ID) %>% filter(Stu_DEMO_TIME_FRAME== max(Stu_DEMO_TIME_FRAME)) %>% 
+  mutate(FinalUnivHrs=(Stu_TotalUniversityHours+LastTermEarnedHrs))
+
+xtabs(~LastTermInfo$ChangeInd)
+anyNA(LastTermInfo)
+NA_LAST <- LastTermInfo[which(is.na((LastTermInfo$LastTermEarnedHrs))),] # 7
+NOT_NA_LAST <- LastTermInfo[!is.na(LastTermInfo$LastTermEarnedHrs),] #298
+
+### toget last term info for not granted degree at the last term
+#NA_LAST <- merge(NA_LAST,lasttermhrs, by.x = c("STU_ID", "Stu_DEMO_TIME_FRAME"), by.y=c("STU_ID","Stu_DEMO_TIME_FRAME"),all.x = T ) %>% mutate(FinalUnivHrs=Stu_TotalUniversityHours + LastTermEarnedHrs.y )
+#NA_LAST$LastTermEarnedHrs.x = NA_LAST$LastTermEarnedHrs
+#NA_LAST1 <- NA_LAST %>% select(-67) %>% select(-66)
+#colnames(NA_LAST1)[63] <- "LastTermEarnedHrs"
+### combind
+#LastTermInfo_all <- rbind(NA_LAST1,NOT_NA_LAST)
+#write.csv(LastTermInfo_all,"LastTermInfo_all.csv")
+ChangedMajor_DF1 <- read.csv("G:/My Drive/#1_Jay's Space/Graduation-chaningMajorsApp/ChangedMajor_DF1.csv")
+LastTermInfo_all <- read.csv("G:/My Drive/#1_Jay's Space/Graduation-chaningMajorsApp/LastTermInfo_all.csv")
+
+
+```
+
+### Average Penultimate Semester Total University Hours
+
+**Changed Index**
+
+  + Stayed Program: stayed in entry program
+  + Changed Program: changed program within biology
+  + Changed department: changed department within HMCSE
+  + Changed College: changed college
+
+```{r message=FALSE, warning=FALSE}
+
+
+unisummary2 <- LastTermInfo_all %>% group_by(On_Time, ChangeInd) %>% dplyr::summarise( MeanPenultiSemesterUnivHrs=mean(Stu_TotalUniversityHours)) %>% tidyr::pivot_wider(names_from = "ChangeInd", values_from="MeanPenultiSemesterUnivHrs") %>% 
+  replace(is.na(.),0) 
+knitr::kable(unisummary2, caption = "Mean of Penultimate Semester Univ.Hrs by Graduation Time")
+```
+### Pivot Table - Proportion of On-time by Change Index
+
+```{r}
+library(rpivotTable)
+rpivotTable::rpivotTable(LastTermInfo_all[,c(-1,-2)], aggregatorName = "Count as Fraction of Rows",
+                         rows = c("Cohort", "ChangeInd"),
+                         cols = c("On_Time"),
+                         subtotals = T,
+                         rendererName = "On-Time FTIC by cohort (Last Term Info.)")
+```
+
+
+Prediction - Probability of Graduating On-Time
+=======================================================================
+
+
+
+
+Column {.tabset .tabset-fade }
+-----------------------------------------------------------------------
+
+### Who is most likely to graduate on-time?
+
+
+ Earlier analysis [include the HTML file here] found that changes in program, department, or college affect total university hours. However, the total university hours are not significantly different between on- and over-time FTIC. In this analysis, we predict the probability of graduation time considering not only the changes in program, but also where they entered and exited in college, department, and program level. Additionally, we include the penultimate total university hours and the very first university hours at UWF.
+ 
+
+**Variables**
+
+  + On-Time: Yes / No
+  + Enter_Prog: entry Program
+  + End_Prog: exit Program
+  + FCProg_Class: classification at their program change
+    - Freshman / Sophomore / Junior / Senior
+  + FCCol_Prog/depart/col: program / department / college at their college change
+  + FCProg_Class: classification at their program change
+  + TotalChangedProg: total number of program changes
+  + TotalChangedDepart: total number of department changes
+  + TotlaChangedCol: total number of college changes
+  + PenultimateSemesterHrs: total university hours in second to last term
+  + Year1UWFHrs: total number of UWF hours at end of 1st year (included UWF-prior hours)
+  + Change Index: 
+      - Stayed program
+      - Changed between programs within biology
+      - Changed between department within HMCSE
+      - Changed between colleges
+
+```{r eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+#glimpse(FTIC_201416_BIO_enc_deg_B_changed_total_FCProg_FCDepart_FCCol)
+
+### start and end progrma
+Start_End_Prog <- FTIC_201416_BIO_enc_deg_B_changed_total_FCProg_FCDepart_FCCol %>% group_by(STU_ID) %>% filter(Stu_DEMO_TIME_FRAME==min(Stu_DEMO_TIME_FRAME)) %>% select(STU_ID, "Start_Prog"=Stu_ProgramCIPDesc, "End_Prog"=Deg_ProgramCIPDesc)
+
+### Year 1 UNIV UWF Hrs
+library(stringr)
+Year1_CRDInfo <- FTIC_201416_BIO_enc_deg_B_changed_total_FCProg_FCDepart_FCCol %>% group_by(STU_ID) %>% 
+  filter(str_detect(Stu_Term, "Fall...")) %>% group_by(Cohort, STU_ID) %>% 
+  mutate(Fall_IND=ifelse((Cohort==2014 & Stu_DEMO_TIME_FRAME==201508),"Year1",
+                         ifelse((Cohort==2015 & Stu_DEMO_TIME_FRAME==201608),"Year1",
+                                ifelse((Cohort==2016 & Stu_DEMO_TIME_FRAME==201708),"Year1","Others")))) %>% 
+  filter(Fall_IND=="Year1") %>% select(STU_ID, Fall_IND,"Year1UniHrs"= Stu_TotalUniversityHours, "Year1UWFHrs"=Stu_TotalInstHours )
+
+### start Program
+ enter_Prog <- FTIC_201416_BIO_enc_deg_B_changed_total_FCProg_FCDepart_FCCol %>% group_by(STU_ID) %>% 
+   filter(Stu_DEMO_TIME_FRAME==min(Stu_DEMO_TIME_FRAME)) %>% select(STU_ID, "Start_Prog" = Stu_ProgramCIPDesc )
+ 
+ ## Prior Hours
+ Prior_hrs <- FTIC_201416_BIO_enc_deg_B_changed_total_FCProg_FCDepart_FCCol %>% group_by(STU_ID) %>% 
+   filter(Stu_DEMO_TIME_FRAME==min(Stu_DEMO_TIME_FRAME)) %>% select(STU_ID, "PriorUnivHrs"=Stu_TotalUniversityHours, "PriorUWFHrs"=Stu_TotalInstHours )
+
+
+ FTIC_201416_BIO_enc_deg_B_changed_total_FCProg_FCDepart_FCCol_a <- merge(FTIC_201416_BIO_enc_deg_B_changed_total_FCProg_FCDepart_FCCol,enter_Prog, by="STU_ID", all.x = T)
+ 
+### merge with data 
+Year1_CRDInfo_ChangeProg<- merge(FTIC_201416_BIO_enc_deg_B_changed_total_FCProg_FCDepart_FCCol_a,Year1_CRDInfo, by="STU_ID", all.y = T ) %>% group_by(STU_ID)%>%  filter(Stu_TotalUniversityHours==max(Stu_TotalUniversityHours)) %>% mutate(PenultimateSemesterHrs=Stu_TotalUniversityHours)
+
+ChangedMajor_DF1 <- merge(FTIC_201416_BIO_enc_deg_B_changed_total_FCProg_FCDepart_FCCol_a, addLastTermInfo, by= "STU_ID", all.x = T)
+colnames(ChangedMajor_DF1)
+#write.csv(ChangedMajor_DF1,"ChangedMajor_DF1.csv")
+#glimpse(Year1_CRDInfo_ChangeProg)
+Year1_CRDInfo_ChangeProg0 <- Year1_CRDInfo_ChangeProg[!duplicated(Year1_CRDInfo_ChangeProg$STU_ID),] 
+Year1_CRDInfo_ChangeProg1 <- Year1_CRDInfo_ChangeProg[!duplicated(Year1_CRDInfo_ChangeProg$STU_ID),] %>% 
+  select(On_Time,"Enter_Prog"=Start_Prog,"End_Prog"=Deg_ProgramCIPDesc,FCProg_Class,TotalChangedProg,TotalChangedDepart,TotalChangedCol,Year1UWFHrs) 
+
+### merge with Prior Hours inf
+
+Year1_CRDInfo_ChangeProg2 <- merge(Year1_CRDInfo_ChangeProg0,Prior_hrs, by="STU_ID", all.x = T)
+glimpse(Year1_CRDInfo_ChangeProg2)
+addLastTermInfo <- LastTermInfo_all %>% select(STU_ID, 63,64,65)
+
+Final_DF1 <- merge(Year1_CRDInfo_ChangeProg2,addLastTermInfo, by="STU_ID", all.x = T)
+#write.csv(Final_DF1, "Final_DF1.csv")
+Year1_CRDInfo_ChangeProg12 <- Year1_CRDInfo_ChangeProg1[, -1]
+#colnames(Year1_CRDInfo_ChangeProg12)
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+### read data 301 ( 4 FTIC did have info at thier 1st year hours)
+Final_DF1 <- read.csv("G:/My Drive/#1_Jay's Space/Graduation-chaningMajorsApp/Final_DF1.csv")
+
+### second data
+
+Second_Last_inf <- Final_DF1 %>% mutate(Year1UWFHrs1=Year1UWFHrs-PriorUWFHrs) %>%  select(On_Time,"Enter_Prog"=Start_Prog,FCCol_Prog,"FCCol_Depart"=FCCol_Deprt,FCCol_Col,"End_Prog"=Deg_ProgramCIPDesc,FCProg_Class,TotalChangedProg,TotalChangedDepart,TotalChangedCol,PriorUnivHrs,Year1UWFHrs,FCCol_UniHrs,PenultimateSemesterHrs,ChangeInd,LastTermEarnedHrs)
+
+ols <- c("On_Time","Enter_Prog" ,"FCCol_Prog","FCCol_Depart","FCCol_Col","End_Prog", "FCProg_Class","ChangeInd")
+Second_Last_inf[ols] <- lapply(Second_Last_inf[ols], factor)
+
+cols_inte <- c("TotalChangedProg" ,"TotalChangedDepart","TotalChangedCol","PriorUnivHrs", "Year1UWFHrs", "FCCol_UniHrs","PenultimateSemesterHrs","LastTermEarnedHrs")
+Second_Last_inf[cols_inte] <- sapply(Second_Last_inf[cols_inte], as.numeric)
+
+
+#sapply(Second_Last_inf, class)
+colnames(Second_Last_inf)
+
+```
+
+
+**Using Naive Bayes Classification**
+
+```{r eval=FALSE, include=FALSE}
+glimpse(Year1_CRDInfo_ChangeProg12)
+Year1_CRDInfo_ChangeProg12$On_Time <- factor(Year1_CRDInfo_ChangeProg12$On_Time)
+Year1_CRDInfo_ChangeProg12$Enter_Prog <- factor(Year1_CRDInfo_ChangeProg12$Enter_Prog)
+Year1_CRDInfo_ChangeProg12$FCProg_Class <- factor(Year1_CRDInfo_ChangeProg12$FCProg_Class)
+Year1_CRDInfo_ChangeProg12$End_Prog <- factor(Year1_CRDInfo_ChangeProg12$End_Prog)
+
+library(caret)
+set.seed(123)
+TrainingIndex <- createDataPartition(Year1_CRDInfo_ChangeProg12$On_Time, p=0.8, list = FALSE)
+TrainingSet <- Year1_CRDInfo_ChangeProg12[TrainingIndex,] # Training Set
+TestingSet <- Year1_CRDInfo_ChangeProg12[-TrainingIndex,]
+```
+
+```{r include=FALSE}
+
+### second data set
+library(caret)
+set.seed(3434)
+TrainingIndex <- createDataPartition(Second_Last_inf$On_Time, p=0.8, list = FALSE)
+TrainingSet <- Second_Last_inf[TrainingIndex,] # Training Set
+TestingSet <- Second_Last_inf[-TrainingIndex,]
+#table(TrainingSet$On_Time)
+#table(TestingSet$On_Time)
+
+```
+
+
+
+```{r eval=FALSE, include=FALSE}
+#library(naivebayes)
+#set.seed(123)
+#ChangeMajorNB <- naive_bayes(On_Time ~ ., data = TrainingSet, usekernel = TRUE)
+#confusionMatrix(predict(ChangeMajorNB), TrainingSet$On_Time)
+```
+
+**Confusion Matrix**
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(naivebayes)
+set.seed(123)
+TrainingSet$TotalChangedProg <- as.integer(TrainingSet$TotalChangedProg)
+TrainingSet$TotalChangedDepart <- as.integer(TrainingSet$TotalChangedDepart)
+TrainingSet$TotalChangedCol <- as.integer(TrainingSet$TotalChangedCol)
+ChangeMajorNB1 <- naive_bayes(On_Time ~ ., data = TrainingSet, usekernel   = TRUE)
+#summary(ChangeMajorNB1)
+confusionMatrix(predict(ChangeMajorNB1), TrainingSet$On_Time)
+```
+```{r include=FALSE}
+set.seed(3434)
+TestingSet$TotalChangedProg <- as.integer(TestingSet$TotalChangedProg)
+TestingSet$TotalChangedDepart <- as.integer(TestingSet$TotalChangedDepart)
+TestingSet$TotalChangedCol <- as.integer(TestingSet$TotalChangedCol)
+
+ChangeMajorNB2 <- naive_bayes(On_Time ~ ., data = TestingSet,   usepoisson = TRUE)
+#summary(ChangeMajorNB2)
+confusionMatrix(predict(ChangeMajorNB2), TestingSet$On_Time)
+
+```
+
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+set.seed(1234)
+ChangeMajorNB3 <- naive_bayes(On_Time ~ ., data = Second_Last_inf,   usepoisson = TRUE)
+#summary(ChangeMajorNB2)
+
+```
+
+
+### Proportion of On / Over-Time by Earned Degree: entry biology
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+DT_CM <- ChangeMajorNB3[["tables"]][["End_Prog"]]
+
+DT_CM_DF <- as.data.frame.matrix(DT_CM)
+DT_CM_DF$EndedDegree <- rownames(DT_CM_DF)
+DT_CM_DF1 <- DT_CM_DF %>%  select(EndedDegree,"Proportion_On_Time"=Yes, "Proportion_Over_Time"=No) 
+DT_CM_DF1$Proportion_On_Time <- round(DT_CM_DF1$Proportion_On_Time, digits = 6)
+DT_CM_DF1$Proportion_Over_Time <- round(DT_CM_DF1$Proportion_Over_Time, digits = 6)
+#colnames(DT_CM_DF1)[1] <- "EarnedDegree"
+library(DT)
+datatable(DT_CM_DF1[, c(1,2,3)], extensions = "Buttons",caption = "Proportion of On/Off-Time by Earned Degree: Entered Biology",
+          filter = "top",
+          options = list(dom="Blfrtip",buttons=c("copy","csv","excel","pdf","print"), lengthMenu=list(c(10,25,50,-1), c(10,25,50,"All")),pageLength=25,scrollY=800,scrollX=TRUE))
+
+```
+
+### Plot - On / Over-Time by Earned Degree: entry biology
+
+
+```{r}
+library(plotly)
+fig2 <- plot_ly(DT_CM_DF1, x = ~EndedDegree, y = ~Proportion_On_Time, type = 'bar', name = 'On-Time', marker = list(color = 'skyblue'))
+fig2 <- fig2 %>% add_trace(y = ~Proportion_Over_Time, name = 'Over-Time', marker = list(color = 'orange'))
+fig2 <- fig2 %>% layout(xaxis = list(title = "Proportion of On-Time vs. Over-Time", tickangle = -45),
+         yaxis = list(title = "Proportion"),
+         margin = list(b = 100),
+         barmode = 'group')
+fig2
+
+```
+
+
+
+
+
+
+### Plot - Probability (PMF) of On / Over-Time 
+
+*  Average of Total UWF Hours at their 1st year
+
+```{r message=FALSE, warning=FALSE}
+library(gridExtra)
+#get_cond_dist(ChangeMajorNB2)
+par(mfrow=c(2,2))
+#p1 <- plot(ChangeMajorNB2, "TotalChangedProg", arg.num=list(legend.ces=0.04), prob="conditional")
+p2 <- plot(ChangeMajorNB2, "TotalChangedProg", prob="conditional")
+p3 <- plot(ChangeMajorNB2, "TotalChangedDepart", prob="conditional")
+p4 <- plot(ChangeMajorNB2, "TotalChangedCol", prob="conditional")
+p5 <- plot(ChangeMajorNB2, "Year1UWFHrs", prob="conditional")
+
+```
+
+### Data Table - Prediction of Graduation Time
+
+```{r message=FALSE, warning=FALSE}
+
+p1 <- round( predict(ChangeMajorNB1 , TrainingSet, type = "prob"), digits = 2)
+p2 <- round( predict(ChangeMajorNB2, TestingSet, type = "prob"), digits = 2)
+results_train <- cbind(p1, TrainingSet)
+results_test <- cbind(p2, TestingSet)
+Results_all <- rbind(results_train,results_test) 
+colnames(Results_all) <- c("Pred_OverTime", "Pred_OnTime","Actual_OnTime","Entered_Prog","FCCol_Prog","FCCol_Depart","FCCol_Col","EarnedDeg_Prog","FCProg_Class","TotalChangedProg","TotalChangedDepart","TotalChangedCol","PrioHrs","Year1UWFHrs","FCCol_UniHrs","PenultimateSemesterHrs","ChangeIndex")
+
+Results_all$Pred_Ind <- ifelse(Results_all$Pred_OnTime>0.50,"YES","NO")
+#table(Results_all$Actual_OnTime, Results_all$Pred_Ind)
+
+library(DT)
+Predic_tb <- datatable(Results_all, extensions = "Buttons",caption = "Probability of On-Time by Changes Majors: Entered Biology",
+          filter = "top",
+          options = list(dom="Blfrtip",buttons=c("copy","csv","excel","pdf","print"), lengthMenu=list(c(10,25,50,-1), c(10,25,50,"All")),pageLength=25,scrollY=800,scrollX=TRUE))
+
+Predic_tb
+```
+
+
+
+
+
