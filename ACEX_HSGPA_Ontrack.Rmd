@@ -1,0 +1,709 @@
+---
+title: "FA_HSGPA_On_Off_Track"
+author: "Jay Kim"
+date: "4/30/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+library(readr)
+library(dplyr)
+ENC <- read_csv("G:/Shared drives/HMCSE-PAM Lab/DATA 202101/202101/STU_ENROLLMENT_SPRING21.csv") %>% filter(Stu_DEMO_DATA_SOURCE =="SIF")
+
+library(readr)
+COURSE_STUDENT_INSTRUCTION_SPRING21 <- read_csv("G:/Shared drives/HMCSE-PAM Lab/DATA 202101/202101/COURSE_STUDENT_INSTRUCTION_SPRING21.csv")
+
+STUDENT_DEGREE_SPRING21 <- read_csv("G:/Shared drives/HMCSE-PAM Lab/DATA 202101/202101/STUDENT_DEGREE_SPRING21.csv") %>% 
+ select(1,2,4,5,  contains("college"), contains("department"), contains("program"), Deg_TermGranted, Deg_Desc) %>% 
+   filter(Deg_Desc=="Bachelor")  %>% group_by(STU_ID) %>% slice(1)
+### add pell inofrmation and hsGPA and prior hrs
+cse <- read_csv("G:/Shared drives/HMCSE-PAM Lab/Jay's Space/DATA/CSE_ALL_ENR_up2020.csv")
+cae_hsgpa_test <- cse %>% 
+   mutate(codeHSGPA=ifelse(GPA_HIGHSCHOOL<3.50,"GPA<3.50",
+                          ifelse(GPA_HIGHSCHOOL<3.60,"GPA<3.60",
+                                 ifelse(GPA_HIGHSCHOOL<3.70,"GPA<3.70",
+                          ifelse(GPA_HIGHSCHOOL<3.80,"GPA<3.80",
+                             ifelse(GPA_HIGHSCHOOL<3.90,"GPA<3.90",    
+                                 ifelse(GPA_HIGHSCHOOL<4.00,"GPA<4.00",
+                                        ifelse(GPA_HIGHSCHOOL<4.10,"GPA<4.10",
+                                               ifelse(GPA_HIGHSCHOOL<4.20,"GPA<4.20",
+                                                      ifelse(GPA_HIGHSCHOOL<4.30,"GPA<4.30",
+                                                             ifelse(GPA_HIGHSCHOOL<4.40,"GPA<4.40",
+                                                                    ifelse(GPA_HIGHSCHOOL<4.50,"GPA<4.50",
+                                                                           ifelse(GPA_HIGHSCHOOL<4.60,"GPA<4.60",
+                                                                                  ifelse(GPA_HIGHSCHOOL<4.70,"GPA<4.70","GPA>=4.70")))))))))))))) %>% 
+  select( STU_ID, cohort_year1="COHORT_YEAR", uwfid="UNIV_ROW_ID", GENDER, GPA_HIGHSCHOOL, codeHSGPA ,prior_hrs="HOURS_BROUGHT_TO_UNIVERSITY" , ETHNICITY)
+
+library(readxl)
+V2_admitted2021_Projection <- read_excel("V2-admitted2021_Projection.xlsx", 
+    sheet = "ACEX+BF+PELL") %>% select(STU_ID, uwfid="UWFID", pell_paid="PELL Paid f", aid_year="Aid Year" )
+
+
+library(readr)
+acex_three_overview <- read_csv("acex_three3.csv") %>% select(-1) %>% group_by(uwfid, aid_year )   #3042
+
+acex_three_overview[(acex_three_overview$uwfid=="970522062" & acex_three_overview$aid_year ==1920),]
+
+acex_hagpa_prior <- merge(acex_three_overview, cae_hsgpa_test, by= c("STU_ID", "uwfid"), all.x = T)
+
+acex_all_pell <- merge(acex_hagpa_prior, V2_admitted2021_Projection, by=c("STU_ID", "uwfid","aid_year"), all.x = T)
+
+
+deg_twovari <- STUDENT_DEGREE_SPRING21 %>%  select(STU_ID, 15,16)
+
+# merge with degree
+library(tidyverse)
+acex_all_pell_deg <- merge(acex_all_pell, deg_twovari, by="STU_ID", all.x = T) %>% 
+   distinct(uwfid, aid_year, .keep_all=TRUE) %>% arrange(uwfid, ID_index)
+
+# merge with program
+cse_program <- cse %>% 
+  select(uwfid="UNIV_ROW_ID", ENTRY_COLLEGE, ENTRY_DEPARTMENT,ENTRY_PROGRAM,codeCOUNTY)
+
+### merge with program
+acex_all_pell_deg_prog <- merge( acex_all_pell_deg, cse_program, by ="uwfid",  all.x=T) %>% 
+  group_by( uwfid, aid_year, ID_index) %>% unique()
+
+acex_all_pell_deg_prog[which(is.na(acex_all_pell_deg_prog$pell_paid)), "pell_paid"] <- 0
+
+V2acex_all_pell_deg <- acex_all_pell_deg_prog %>%  
+  mutate(awardedPell= ifelse(pell_paid >0, "Yes","No")) %>% 
+   mutate(on_off_deg = ifelse( is.na(Ontrack), Deg_Desc,  Ontrack )) 
+#acex_all_pell_deg_prog[!duplicated(acex_all_pell_deg_prog$uwfid & acex_all_pell_deg_prog$aid_year),]
+
+
+```
+
+### on-off time track only
+
+```{r}
+deg_aid <- V2acex_all_pell_deg %>% 
+  filter(on_off_deg == "Bachelor") %>% 
+  select(uwfid,tier,cohort_year1, aid_year, acex_paid,on_off_deg) %>% 
+  unique()
+bachelor_id <- deg_aid %>% select(uwfid, tier)
+bachelor_id_aids <- merge(V2acex_all_pell_deg, bachelor_id, by="uwfid", all.y = T) %>%
+  group_by(uwfid, aid_year) %>%
+  unique() 
+
+bachelor_id_aids_wide <- merge(V2acex_all_pell_deg, bachelor_id, by="uwfid", all.y = T) %>%
+  group_by(uwfid, aid_year) %>%
+  unique() %>% 
+  select(uwfid,aid_year,on_off_deg ) %>% 
+  arrange(uwfid,aid_year)
+
+bachelor_tier <- V2acex_all_pell_deg %>% 
+  filter(acex_paid>0) %>% 
+  select(uwfid, cohort_year1, tier, Deg_TermGranted) %>% 
+  unique()
+library(data.table)
+wide_data_aid <-  setDT(bachelor_id_aids_wide)[ , lapply(.SD, paste, collapse=" "), by= uwfid]
+wide_on_track <-  str_split_fixed(wide_data_aid$on_off_deg, " ", 4)
+mat_on_track <- matrix(unlist(wide_on_track), ncol=4, byrow=FALSE)
+df_on_track <- as.data.frame(mat_on_track)
+all_wide_track <- cbind(wide_data_aid$uwfid, df_on_track)
+colnames(all_wide_track) <-  c("uwfid","aid1","aid2","aid3","aid4")
+all_wide_track_tier_cohort <- merge(all_wide_track, bachelor_tier, by="uwfid", all.x = T )
+write.csv(all_wide_track_tier_cohort, "all_wide_track_tier_cohort.csv")
+#### add prior for the wide data set
+bachelor_tier_prior <- V2acex_all_pell_deg %>% 
+  #filter(cohort_year1==20172018) %>% 
+  select(uwfid,STU_ID,prior_hrs,GENDER,GPA_HIGHSCHOOL, codeHSGPA,ETHNICITY,codeCOUNTY,contains("ENTRY") ) %>% 
+  unique()
+
+
+library(readr)
+bachelor_on_off_by_aids <- read_csv("G:/My Drive/#1_Jay's Space/Scholarships-YOY/bachelor_on_off_by_aids.csv")
+bachelor_on_off_by_aids_demo <- merge(bachelor_on_off_by_aids,bachelor_tier_prior, by="uwfid", all.x = T )
+
+```
+
+
+```{r}
+deg_info <- STUDENT_DEGREE_SPRING21 %>% 
+  select(STU_ID, Deg_College, Deg_Department, Deg_ProgramCIPDesc)
+bachelor_on_off_by_aids_demo_deg <-  merge(bachelor_on_off_by_aids_demo, deg_info, by="STU_ID", all.x = T )
+write.csv(bachelor_on_off_by_aids_demo_deg, "bachelor_acex_demo_deg_info.csv")
+
+### with non-bachelor degree
+DF_wide_track_tier_cohort <- all_wide_track_tier_cohort %>% 
+  mutate(bachelor = rep("Yes")) %>% 
+  filter(cohort_year1 == 20172018) %>% 
+  select(uwfid, bachelor) %>% 
+  unique() #118
+
+DF_demo_acex2017 <- V2acex_all_pell_deg %>%
+  group_by(uwfid) %>% 
+  filter(cohort_year1 == 20172018) %>% 
+  filter(ID_index ==1) #516
+
+anti_Nobs2017 <- anti_join(DF_demo_acex2017,DF_wide_track_tier_cohort, by="uwfid" ) %>% 
+  group_by(uwfid) %>% 
+  mutate(bachelor = rep("No")) %>% 
+  select(-1) %>% 
+  unique() #398
+
+anti_Yesbs <- merge(DF_wide_track_tier_cohort, DF_demo_acex2017, by="uwfid", all.x=T ) %>% 
+  group_by(uwfid) %>% 
+  select(-X1) 
+  
+DF_test <- rbind(anti_Yesbs, anti_Nobs2017)
+##export dataset for modeling 2017
+write.csv(DF_test, "DF_test_modeling.csv")
+  
+
+anti_Nobs2017[duplicated(anti_Nobs2017$uwfid),]
+
+table(bachelor_id_aids$ID_index, bachelor_id_aids$on_off_deg)
+### number of bachelors
+bachelor_aid_year <- deg_aid %>% 
+    group_by(uwfid,aid_year) %>% 
+  filter(aid_year == max(aid_year)) %>% 
+  group_by(cohort_year1,tier) %>% 
+  dplyr::summarise(Counts=n())
+bachelor_aid_year
+
+addmargins(table(deg_aid$cohort_year1, deg_aid$on_off_deg))
+#write.csv(acex_all_pell_deg, "V1acex_all_pell_deg.csv")
+#write.csv(V2acex_all_pell_deg, "VVacex_all_pell_deg_prog.csv")
+
+```
+
+### Recoding 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+library(readr)
+library(tidyverse)
+V2acex_all_pell_deg <- read_csv("VVacex_all_pell_deg_prog.csv") 
+
+
+V2acex_all_pell_deg$on_off_deg <- as.factor(V2acex_all_pell_deg$on_off_deg)
+addmargins(table(V2acex_all_pell_deg$cohort_year1, V2acex_all_pell_deg$on_off_deg))
+
+ 
+head(V2acex_all_pell_deg[,c(-1,-6)],50)
+
+```
+
+```{r}
+library(stringr)
+ENC[ENC$STU_ID=="913BD7C75F041E5FBB38EF246445B111A5C47673",] %>% 
+  arrange(Stu_TotalUniversityHours) %>%  
+  filter(str_detect(Stu_Term, "Fall..."))
+```
+
+### Summary ACEX, BF, Pell, Prior Hrs, UWF GPA and CRD at their aid 1
+
+```{r}
+aid1 <- V2acex_all_pell_deg %>% filter(ID_index ==1)
+
+hist(aid1$GPA_HIGHSCHOOL)
+fivenum(aid1$acex_offered) # 0 2000 3000 4000 8000
+unique(aid1$acex_offered)
+summaryacexbyaid <- V2acex_all_pell_deg %>% 
+ group_by(ID_index, on_off_deg,codeHSGPA) %>% dplyr::summarise(meanACEXOffered=mean(acex_offered), meanBF=mean(TotalBF), meanPell=mean(pell_paid),meanPriorHrs=mean(prior_hrs),meanCRD= mean(HrsbyYear, na.rm = T),meanUWFGPA=mean(UWFGPA, na.rm=T),Counts=n())
+summaryacexbyaid
+
+#write.csv(summaryacexbyaid, "summaryacex_amounts_by_aid.csv")
+```
+### barplot - Aid Year 1 by on-off-dropped
+
+```{r}
+
+aid1 <- V2acex_all_pell_deg %>% filter(ID_index ==1) %>% 
+  mutate(on_off_deg = as.character(on_off_deg)) %>% 
+       mutate(on_off_deg1 = ifelse(is.na(on_off_deg), "Dropped", on_off_deg))  
+ 
+aid2 <- V2acex_all_pell_deg %>% filter(ID_index ==2) %>% 
+  mutate(on_off_deg = as.character(on_off_deg)) %>% 
+       mutate(on_off_deg1 = ifelse(is.na(on_off_deg), "Dropped", on_off_deg))  
+  
+
+aid3 <- V2acex_all_pell_deg %>% filter(ID_index ==3) %>% 
+  mutate(on_off_deg = as.character(on_off_deg)) %>% 
+       mutate(on_off_deg1 = ifelse(is.na(on_off_deg), "Dropped", on_off_deg))  
+
+library(plotly)
+#aid1_fix <- aid1 %>% 
+##  mutate( on_off_deg = as.character(on_off_deg))
+
+#aid1_fix[is.na(aid1_fix$on_off_deg), "on_off_deg"] <- "Dropped"
+
+ fig1 <- aid1 %>% 
+   count(  on_off_deg1, codeHSGPA) %>% 
+   plot_ly( x=~on_off_deg1, y=~n, color = ~codeHSGPA)
+ 
+ fig1
+
+
+
+```
+
+### on-off-degree info by aid year
+
+```{r}
+library(plotly)
+
+ fig2 <- aid2 %>% 
+   count(  on_off_deg1, codeHSGPA) %>% 
+   plot_ly( x=~on_off_deg1, y=~n, color = ~codeHSGPA)
+
+  fig3 <- aid3 %>% 
+   count(  on_off_deg1, codeHSGPA) %>% 
+   plot_ly( x=~on_off_deg1, y=~n, color = ~codeHSGPA)
+
+ 
+ 
+  
+ fig2
+ fig3
+
+
+```
+
+
+
+
+
+
+### On-off track at their 1st to 3rd year
+
+```{r}
+table(V2acex_all_pell_deg$cohort_year1, V2acex_all_pell_deg$ID_index)
+library(gtsummary)
+
+
+aid_summary1 <- aid1 %>% 
+  tbl_cross(
+  row=codeHSGPA,
+  col=on_off_deg1,
+  percent = "cell") %>% 
+  add_p()
+
+
+aid_summary1_coll <- aid1 %>% 
+  tbl_cross(
+  row=ENTRY_COLLEGE,
+  col=on_off_deg1,
+  percent = "row"
+) %>% 
+  add_p()
+
+
+
+
+aid_summary2 <- aid2 %>% 
+  tbl_cross(
+  row=codeHSGPA,
+  col=on_off_deg1,
+  percent = "cell"
+)  
+  
+
+aid_summary3 <- aid3 %>% 
+  tbl_cross(
+  row=codeHSGPA,
+  col=on_off_deg1,
+  percent = "cell"
+)  
+
+aid_summary1
+aid_summary1_coll
+aid_summary2
+aid_summary3
+
+```
+
+### CRD
+
+```{r}
+ENC[ENC$STU_ID=="1A0BFC287D9C51A04D2218E26FC0E0B035F75078",] %>% arrange(Stu_DEMO_TIME_FRAME)
+
+```
+
+
+
+### hchart aid 1 by hs gpa vs. acex amounts
+
+```{r}
+hist(aid1_fix$HrsbyYear)
+aid2_fix <- aid2
+
+aid1_chart <- aid1 %>%  filter(cohort_year1 <= 20192020)
+aid2_chart <- aid2 %>%  filter(cohort_year1 <= 20182019)
+aid3_chart <- aid3 %>%  filter(cohort_year1 <= 20172018)
+
+library(highcharter)
+aid1_chart <- hchart(aid1_chart, "scatter", hcaes( x= UWFGPA, y= HrsbyYear, group = on_off_deg1)) %>% 
+              hc_title( text=  "UWF GPA vs. Earned Credit Hours at their 1st Year by On/Off-Track") %>% 
+              hc_subtitle(text = "ACEX FTIC from 2017 to 2019")
+aid2_chart <- hchart(aid2_chart, "scatter", hcaes( x= UWFGPA, y= HrsbyYear, group = on_off_deg1)) %>% 
+  hc_title( text=  "UWF GPA vs. Earned Credit Hours at their 2nd Year by On/Off-Track") %>% 
+              hc_subtitle(text = "ACEX FTIC from 2017 to 2018")
+aid3_chart <- hchart(aid3_chart, "scatter", hcaes( x= UWFGPA, y= HrsbyYear, group = on_off_deg1)) %>% 
+  hc_title( text=  "UWF GPA vs. Earned Credit Hours at their 3rd Year by On/Off-Track") %>% 
+              hc_subtitle(text = "ACEX FTIC 2017")
+aid1_chart
+aid2_chart
+aid3_chart
+
+
+```
+
+### Prediction of On-Track variables for aid1 
+
+```{r}
+colnames(V2acex_all_pell_deg)
+myvari_aid1 <- aid1 %>%   
+  select( on_track="on_off_deg",acex_offered,housing,meal_plan,pell_paid, TotalBF,GPA_HIGHSCHOOL,tier,GENDER, prior_hrs, ETHNICITY,ENTRY_COLLEGE, ENTRY_DEPARTMENT,ENTRY_PROGRAM ) %>% 
+  na.omit() %>% 
+  mutate(on_track = as.factor(on_track))
+#1212
+colnames(myvari_aid1)
+
+myvari_aid2 <- V2acex_all_pell_deg %>% filter(ID_index ==2) %>%   
+  select( on_track="on_off_deg",acex_offered,housing,meal_plan,pell_paid, TotalBF,GPA_HIGHSCHOOL,tier,GENDER, prior_hrs, ETHNICITY ) %>% 
+  na.omit()
+
+myvari_aid3 <- V2acex_all_pell_deg %>% filter(ID_index ==3) %>%  
+  select( on_track="on_off_deg",acex_offered,housing,meal_plan,pell_paid, TotalBF,GPA_HIGHSCHOOL,tier,GENDER, prior_hrs, ETHNICITY ) %>% 
+  na.omit()
+
+
+
+
+```
+### modeling
+
+```{r}
+library(rsample)  # data splitting 
+library(dplyr)    # data transformation
+library(ggplot2)  # data visualization
+library(caret)    # implementing with caret
+library(h2o)      # implementing with h2o
+library(naivebayes)
+
+# Performs stratified random split of the data set
+
+#####################################
+########  EACH year #################
+#####################################
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+ 
+set.seed(1234)
+TrainingIndex <- createDataPartition(myvari_aid1$on_track, p=0.7, list = FALSE)
+  TrainingSet <- myvari_aid1[TrainingIndex,] # Training Set
+  TestingSet <- myvari_aid1[-TrainingIndex,] # Test Set
+class(myvari_aid1)
+ 
+table(TrainingSet$on_track) %>% prop.table()
+table(TestingSet$on_track) %>% prop.table()
+
+### models
+#TRAIN SET
+### regression discontinuity
+
+on_track_m1 <- naive_bayes(on_track ~ acex_offered + housing + meal_plan + pell_paid + TotalBF + GPA_HIGHSCHOOL+tier+GENDER+prior_hrs+ ETHNICITY + ENTRY_COLLEGE+ ENTRY_DEPARTMENT+ENTRY_PROGRAM,
+                           data=TrainingSet)
+  
+on_track_m1_1 <- naive_bayes(on_track ~ acex_offered + housing + meal_plan + pell_paid + TotalBF + GPA_HIGHSCHOOL+tier+GENDER+prior_hrs+ ETHNICITY + ENTRY_COLLEGE+ ENTRY_DEPARTMENT+ENTRY_PROGRAM, 
+                           data=TestingSet) 
+  
+
+  confTier1 <- confusionMatrix(predict(on_track_m1), TrainingSet$on_track)
+  confTier1_1 <- confusionMatrix(predict(on_track_m1_1), TestingSet$on_track)
+
+confTier1
+confTier1_1
+
+```
+```{r}
+tables(on_track_m1)
+```
+
+### modeling for bachelor using the most recent info
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+myvari_degreeinfo <- V2acex_all_pell_deg %>% 
+  group_by(uwfid)  %>% 
+  filter(cohort_year1 == 20172018) %>% # by cohort
+  filter(aid_year == max(aid_year)) %>% 
+  select( on_track="on_off_deg",acex_offered,housing,meal_plan,pell_paid, TotalBF,codeHSGPA,tier,GENDER, prior_hrs, ETHNICITY,ENTRY_COLLEGE, ENTRY_DEPARTMENT,ENTRY_PROGRAM ) %>%
+  #na.omit() %>% 
+  replace(is.na(on_off_deg), "Dropped") %>%  # dropped FTIC not incldue
+  mutate(on_track = as.factor(on_track)) %>% 
+  mutate(tier = as.factor(tier))  
+
+library(rpivotTable)
+rpivot <- rpivotTable(V2acex_all_pell_deg, aggregatorName = "Count as Fraction of Rows",
+            rows = c("on_off_deg"),
+            cols = c("cohort_year"),
+            subtotals = T, rendererName = "Table With Subtotal")
+
+```
+
+### new data set
+```{r}
+library(readr)
+DF_test_modeling <- read_csv("G:/My Drive/#1_Jay's Space/Scholarships-YOY/DF_test_modeling.csv", 
+    col_types = cols(X1 = col_skip(), bachelor = col_factor(levels = c())))
+table(DF_test_modeling$bachelor)
+colSums(is.na(DF_test_modeling))
+myvari_set1 <-  DF_test_modeling %>% 
+  select(bachelor,acex_offered , housing , meal_plan , pell_paid , TotalBF , codeHSGPA,tier,GENDER,prior_hrs, ETHNICITY , ENTRY_COLLEGE , ENTRY_DEPARTMENT ,ENTRY_PROGRAM)
+colSums(is.na(myvari_set1))
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+set.seed(1234)
+TrainingIndex <- createDataPartition(myvari_set1$bachelor, p=0.75, list = FALSE)
+  TrainingSet <- myvari_set1[TrainingIndex,] # Training Set
+  TestingSet <- myvari_set1[-TrainingIndex,] # Test Set
+class(myvari_set1)
+ 
+table(TrainingSet$bachelor) %>% prop.table()
+table(TestingSet$bachelor) %>% prop.table()
+
+### models
+#TRAIN SET
+on_track_m1_deg <- naive_bayes(bachelor      ~ acex_offered + housing + meal_plan + pell_paid + TotalBF + codeHSGPA+tier+GENDER+prior_hrs+ ETHNICITY + ENTRY_COLLEGE + ENTRY_DEPARTMENT + ENTRY_PROGRAM, 
+                           data=TrainingSet, usekernel = T)
+  
+on_track_m1_1_deg <- naive_bayes(bachelor ~acex_offered + housing + meal_plan + pell_paid + TotalBF + codeHSGPA+tier+GENDER+prior_hrs+ ETHNICITY + ENTRY_COLLEGE + ENTRY_DEPARTMENT + ENTRY_PROGRAM, 
+                           data=TestingSet, usekernel = T) 
+  
+
+  confTier1_deg <- confusionMatrix(predict(on_track_m1_deg), TrainingSet$bachelor)
+  confTier1_1_deg <- confusionMatrix(predict(on_track_m1_1_deg), TestingSet$bachelor)
+
+confTier1_deg
+confTier1_1_deg
+
+```
+###tables
+
+```{r}
+descriptive_tables <- naive_bayes(bachelor      ~ acex_offered + housing + meal_plan + pell_paid + TotalBF + codeHSGPA+tier+GENDER+prior_hrs+ ETHNICITY + ENTRY_COLLEGE + ENTRY_DEPARTMENT + ENTRY_PROGRAM, 
+                           data=myvari_set1, usekernel = F)
+descriptive_tables[["tables"]]
+```
+
+### descriptive data
+
+```{r}
+myvari_set2 <-  DF_test_modeling %>% 
+  select(bachelor,acex_offered , housing , meal_plan , pell_paid , TotalBF , GPA_HIGHSCHOOL,codeHSGPA,tier,GENDER,prior_hrs, ETHNICITY , ENTRY_COLLEGE , ENTRY_DEPARTMENT ,ENTRY_PROGRAM)
+summary_bachelor <-  myvari_set2 %>% 
+  group_by(tier, bachelor) %>% 
+  dplyr::summarise(Count=n(), meanHSGPA= mean(GPA_HIGHSCHOOL), meanPriorHrs=mean(prior_hrs),medianPriorHrs = median(prior_hrs), SDPriorHrs=sd(prior_hrs), minPriorHrs=min(prior_hrs),maxPriorHrs=max(prior_hrs))
+summary_bachelor
+write.csv(summary_bachelor, "summary_bachelor.csv")
+```
+
+### HS GPA
+```{r}
+total_FA <-  V2acex_all_pell_deg %>%
+  filter(acex_paid>0) %>% 
+  #filter(tuition_fees_penalties_and_fines>0) %>% 
+  group_by(uwfid) %>% 
+  dplyr::summarise(totalNumAids=n(), Sumacexpaid=sum(acex_paid), SumBFpaid= sum(TotalBF),
+                   SumPell=sum(pell_paid), SumHousing=sum(housing), SumMeal=sum(meal_plan))
+
+total_FA
+
+V1DF_test_modeling <- merge(DF_test_modeling, total_FA, by="uwfid", all.x = T)
+write.csv(V1DF_test_modeling, "V1DF_test_modeling.csv")
+
+####
+####
+### updated data
+#######
+V2DF_test_modeling <- V1DF_test_modeling %>% 
+  mutate(bachelor2=ifelse(Deg_TermGranted>0, "Yes","No")) %>% 
+  mutate(bachelor3 =ifelse(is.na(bachelor2), "No", bachelor2 ))
+table(V2DF_test_modeling$bachelor3)
+write.csv(V2DF_test_modeling, "V2DF_test_modeling.csv")
+
+
+library(readr)
+V2DF  <- read_csv("G:/My Drive/#1_Jay's Space/Scholarships-YOY/V2DF_test_modeling.csv", 
+    col_types = cols(X1 = col_skip(), bachelor3 = col_factor(levels = c())))
+
+summary_info <- V2DF %>% 
+  group_by( bachelor3, tier) %>% 
+  dplyr::summarise(Counts=n())
+summary_info
+
+addmargins( table(V2DF$tier,V2DF$Deg_TermGranted, V2DF$bachelor3))
+
+
+```
+```{r}
+summary_bachelor_gpa <-  V2DF %>% 
+  group_by(tier, bachelor3) %>% 
+  dplyr::summarise(Count=n(), meanHSGPA= mean(GPA_HIGHSCHOOL), meanPriorHrs=mean(prior_hrs),medianPriorHrs = median(prior_hrs), SDPriorHrs=sd(prior_hrs), minPriorHrs=min(prior_hrs),maxPriorHrs=max(prior_hrs))
+summary_bachelor_gpa
+write.csv(summary_bachelor_gpa, "summary_bachelor_gpa.csv")
+
+summary_bachelor_gpa1 <-  V2DF %>% 
+  group_by(codeHSGPA, bachelor3) %>% 
+  dplyr::summarise(Count=n(), meanHSGPA= mean(GPA_HIGHSCHOOL), meanPriorHrs=mean(prior_hrs),medianPriorHrs = median(prior_hrs), SDPriorHrs=sd(prior_hrs), minPriorHrs=min(prior_hrs),maxPriorHrs=max(prior_hrs))
+summary_bachelor_gpa1
+write.csv(summary_bachelor_gpa1, "summary_bachelor_gpa1.csv")
+
+
+summary_bachelor_gpa2 <-  V2DF %>% 
+  mutate(codeHSGPA2=ifelse(GPA_HIGHSCHOOL<3.50, "GPA<3.50",
+                           ifelse(GPA_HIGHSCHOOL<3.80, "GPA<3.80",
+                                  ifelse(GPA_HIGHSCHOOL<4.00,"GPA<4.00",
+                                         ifelse(GPA_HIGHSCHOOL<4.30,"GPA<4.30",
+                                                ifelse(GPA_HIGHSCHOOL<4.50, "GPA<4.50", "GPA>=4.50")))))) %>% 
+  group_by(tier,codeHSGPA2, bachelor3) %>% 
+  dplyr::summarise(Count=n(), meanHSGPA= mean(GPA_HIGHSCHOOL), meanPriorHrs=mean(prior_hrs),medianPriorHrs = median(prior_hrs), SDPriorHrs=sd(prior_hrs), minPriorHrs=min(prior_hrs),maxPriorHrs=max(prior_hrs))
+summary_bachelor_gpa2
+write.csv(summary_bachelor_gpa2, "summary_bachelor_gpa2.csv")
+
+summary_bachelor_gpa3 <-  V2DF %>% 
+  mutate(codeHSGPA2=ifelse(GPA_HIGHSCHOOL<3.50, "GPA<3.50",
+                           ifelse(GPA_HIGHSCHOOL<3.80, "GPA<3.80",
+                                  ifelse(GPA_HIGHSCHOOL<4.00,"GPA<4.00",
+                                         ifelse(GPA_HIGHSCHOOL<4.30,"GPA<4.30",
+                                                ifelse(GPA_HIGHSCHOOL<4.50, "GPA<4.50", "GPA>=4.50")))))) %>% 
+  group_by(tier,ETHNICITY, bachelor3) %>% 
+  dplyr::summarise(Count=n(), meanHSGPA= mean(GPA_HIGHSCHOOL), meanPriorHrs=mean(prior_hrs),medianPriorHrs = median(prior_hrs), SDPriorHrs=sd(prior_hrs), minPriorHrs=min(prior_hrs),maxPriorHrs=max(prior_hrs))
+summary_bachelor_gpa3
+write.csv(summary_bachelor_gpa3, "summary_bachelor_ethnicity.csv")
+
+summary_bachelor_gpa4 <-  V2DF %>% 
+  mutate(codeHSGPA2=ifelse(GPA_HIGHSCHOOL<3.50, "GPA<3.50",
+                           ifelse(GPA_HIGHSCHOOL<3.80, "GPA<3.80",
+                                  ifelse(GPA_HIGHSCHOOL<4.00,"GPA<4.00",
+                                         ifelse(GPA_HIGHSCHOOL<4.30,"GPA<4.30",
+                                                ifelse(GPA_HIGHSCHOOL<4.50, "GPA<4.50", "GPA>=4.50")))))) %>% 
+  group_by(tier,ENTRY_COLLEGE, bachelor3) %>% 
+  dplyr::summarise(Count=n(), meanHSGPA= mean(GPA_HIGHSCHOOL), meanPriorHrs=mean(prior_hrs),medianPriorHrs = median(prior_hrs), SDPriorHrs=sd(prior_hrs), minPriorHrs=min(prior_hrs),maxPriorHrs=max(prior_hrs))
+summary_bachelor_gpa4
+write.csv(summary_bachelor_gpa4, "summary_bachelor_college.csv")
+
+summary_bachelor_gpa5 <-  V2DF %>% 
+  mutate(codeHSGPA2=ifelse(GPA_HIGHSCHOOL<3.50, "GPA<3.50",
+                           ifelse(GPA_HIGHSCHOOL<3.80, "GPA<3.80",
+                                  ifelse(GPA_HIGHSCHOOL<4.00,"GPA<4.00",
+                                         ifelse(GPA_HIGHSCHOOL<4.30,"GPA<4.30",
+                                                ifelse(GPA_HIGHSCHOOL<4.50, "GPA<4.50", "GPA>=4.50")))))) %>% 
+  group_by(tier,GENDER, bachelor3) %>% 
+  dplyr::summarise(Count=n(), meanHSGPA= mean(GPA_HIGHSCHOOL), meanPriorHrs=mean(prior_hrs),medianPriorHrs = median(prior_hrs), SDPriorHrs=sd(prior_hrs), minPriorHrs=min(prior_hrs),maxPriorHrs=max(prior_hrs))
+summary_bachelor_gpa5
+write.csv(summary_bachelor_gpa5, "summary_bachelor_gender.csv")
+
+library(modeest)
+summary_bachelor_gpa6 <-  V2DF %>% 
+  mutate(codeHSGPA3=ifelse(GPA_HIGHSCHOOL<3.50, "GPA<3.50",
+                           ifelse(GPA_HIGHSCHOOL<3.80, "GPA<3.80",
+                                  ifelse(GPA_HIGHSCHOOL<4.00,"GPA<4.00", "GPA>=4.00")))) %>% 
+  group_by(tier,Deg_TermGranted, bachelor3) %>% 
+  dplyr::summarise(Count=n(), meanHSGPA= mean(GPA_HIGHSCHOOL), meanPriorHrs=mean(prior_hrs),
+                  # modeAidYears=mlv(totalNumAids, method = "mfv"),
+                   sumACEXpaid = sum(Sumacexpaid), sumBF=sum(SumBFpaid), sumPell=sum(SumPell),sumHousing=sum(SumHousing), sumMeal=sum(SumMeal)) %>% 
+  arrange(bachelor3,tier)
+summary_bachelor_gpa6
+write.csv(summary_bachelor_gpa6, "summary_bachelor_FA.csv")
+
+
+summary_bachelor_gpa7 <-  V2DF %>% 
+  mutate(bachelor1 = ifelse(bachelor == on_off_deg,  "Yes","No")) %>% 
+  mutate(codeHSGPA3=ifelse(GPA_HIGHSCHOOL<3.50, "GPA<3.50",
+                           ifelse(GPA_HIGHSCHOOL<3.80, "GPA<3.80",
+                                  ifelse(GPA_HIGHSCHOOL<4.00,"GPA<4.00", "GPA>=4.00")))) %>% 
+  group_by(tier,Deg_TermGranted, bachelor3) %>% 
+  dplyr::summarise(Count=n(),   meanPriorHrs=mean(prior_hrs),
+                   meanACEXpaid = mean(Sumacexpaid), meanBF=mean(SumBFpaid), meanPell=mean(SumPell),meanHousing=mean(SumHousing), meanMeal=mean(SumMeal)) %>% 
+  arrange(bachelor3,tier)
+summary_bachelor_gpa7
+write.csv(summary_bachelor_gpa7, "summary_bachelor_AVEFA.csv")
+
+
+```
+
+```{r message=FALSE, warning=FALSE}
+library(readr)
+V2DF_test_modeling <- read_csv("G:/My Drive/#1_Jay's Space/Scholarships-YOY/V2DF_test_modeling.csv", 
+    col_types = cols(X1 = col_skip(), bachelor3 = col_factor(levels = c())))
+myvari_set3 <-  V2DF_test_modeling %>% 
+  select(bachelor3,Sumacexpaid , SumBFpaid , SumPell , SumHousing , SumMeal , codeHSGPA,tier,GENDER,prior_hrs, ETHNICITY , ENTRY_COLLEGE , ENTRY_DEPARTMENT ,ENTRY_PROGRAM)
+
+set.seed(1234)
+TrainingIndex <- createDataPartition(myvari_set3$bachelor3, p=0.75, list = FALSE)
+  TrainingSet <- myvari_set3[TrainingIndex,] # Training Set
+  TestingSet <- myvari_set3[-TrainingIndex,] # Test Set
+class(myvari_set3)
+ 
+table(TrainingSet$bachelor3) %>% prop.table()
+table(TestingSet$bachelor3) %>% prop.table()
+
+### models
+#TRAIN SET
+m1_deg <- naive_bayes(bachelor3      ~ ., 
+                           data=TrainingSet, usekernel = T)
+  
+m1_1_deg <- naive_bayes(bachelor3 ~., 
+                           data=TestingSet, usekernel = T) 
+  
+
+  confTier1_ <- confusionMatrix(predict(m1_deg), TrainingSet$bachelor3)
+  confTier1_1 <- confusionMatrix(predict(m1_1_deg), TestingSet$bachelor3)
+
+  confTier1_
+confTier1_1
+
+pre1 <- predict(m1_deg, TrainingSet, type = "prob")
+resutls_1 <- cbind(TrainingSet, pre1)
+
+pre2 <- predict(m1_1_deg, TestingSet, type = "prob")
+resutls_2 <- cbind(TestingSet, pre2)
+
+ACEX_resutls <- rbind(resutls_1, resutls_2)
+table(ACEX_resutls$bachelor3)
+write.csv(ACEX_resutls, "ACEX_results1.csv")
+```
+
+```{r}
+table(acex_all_pell$aid_year, acex_all_pell$cohort_year1)
+acex_check <- acex_all_pell %>% 
+  filter(cohort_year1 == 20172018) %>% 
+  filter(aid_year == 1718) %>% 
+  group_by(uwfid) %>% unique()
+
+acex_check1 <- merge(acex_check, STUDENT_DEGREE_SPRING21, by="STU_ID", all.x = T)
+addmargins(table(acex_check1$Deg_TermGranted, acex_check1$tier))
+FT2017_bachelor_id <- acex_check1 %>% 
+  select(uwfid, STU_ID)
+
+ENC_acex2017 <- merge(FT2017_bachelor_id, ENC, by="STU_ID", all.x = T) %>% 
+  group_by(STU_ID) %>% 
+  arrange(STU_ID,Stu_DEMO_TIME_FRAME) %>% 
+  #filter(str_detect(Stu_Term, "Fall...")) %>% 
+  filter(Stu_DEMO_TIME_FRAME == max(Stu_DEMO_TIME_FRAME)) %>% 
+  mutate(Last_Term=Stu_DEMO_TIME_FRAME) %>% 
+  select( STU_ID,Last_Term, contains("total"))
+```
+
+
+
+
+
+
+
+
+
+
+

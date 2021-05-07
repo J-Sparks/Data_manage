@@ -1,0 +1,99 @@
+---
+title: "DataShaping_ACEX_Tracked"
+author: "Jay Kim"
+date: "5/7/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readxl)
+actualACEX_Data_by_Cohort2_22_21 <- read_excel("G:/My Drive/#1_Jay's Space/Scholarships-YOY/actualACEX Data by Cohort2-22-21.xlsx", 
+    sheet = "ACEX Detail Data")
+library(janitor)
+cleanacex <- clean_names(actualACEX_Data_by_Cohort2_22_21) 
+#cleanacex[(cleanacex$uwfid=="970522062" & cleanacex$cohort_year !="19-20" ),]  
+ clean_id <- cleanacex %>% 
+  select(uwfid) %>% 
+  unique() 
+ 
+library(readr)
+CSE_MATCH_IDS_1_ <- read_csv("G:/My Drive/#1_Jay's Space/Scholarships-YOY/CSE_MATCH_IDS (1).csv")
+colnames(CSE_MATCH_IDS_1_) <- c("STU_ID", "uwfid")
+
+clean_id_match <- merge(clean_id, CSE_MATCH_IDS_1_, by="uwfid", all.x = T)
+clean_ID_uwfid <- clean_id_match[!is.na(clean_id_match$STU_ID),]
+
+### degree
+STUDENT_DEGREE_SPRING21 <- read_csv("G:/Shared drives/HMCSE-PAM Lab/DATA 202101/202101/STUDENT_DEGREE_SPRING21.csv") %>% 
+ select(1,2,4,5,  contains("college"), contains("department"), contains("program"), Deg_TermGranted, Deg_Desc) %>% 
+   filter(Deg_Desc=="Bachelor")  %>% group_by(STU_ID) %>% slice(1) 
+deg_program <- STUDENT_DEGREE_SPRING21 %>% 
+  select(STU_ID,15,16, contains("CIP"))
+
+acex_check1 <- merge(clean_ID_uwfid, deg_program, by="STU_ID", all.x = T)
+
+###ENC
+ENC <- read_csv("G:/Shared drives/HMCSE-PAM Lab/DATA 202101/202101/STU_ENROLLMENT_SPRING21.csv") %>% filter(Stu_DEMO_DATA_SOURCE =="SIF")
+
+ENC_acex <- merge(clean_ID_uwfid, ENC, by="STU_ID", all.x = T) %>% 
+  group_by(STU_ID) %>% 
+  arrange(STU_ID,Stu_DEMO_TIME_FRAME) %>% 
+  #filter(str_detect(Stu_Term, "Fall...")) %>% 
+  filter(Stu_DEMO_TIME_FRAME == max(Stu_DEMO_TIME_FRAME)) %>% 
+  mutate(Last_Term=Stu_DEMO_TIME_FRAME) %>% 
+  select( STU_ID,Last_Term, contains("total"))  #5822
+colnames(ENC_acex) <- c("STU_ID", "Last_Term", "Last_unihrs","Last_UWFhrs","Last_UWFtgp")
+
+
+ENC_acex_each <- merge(clean_ID_uwfid, ENC, by="STU_ID", all.x = T) %>% 
+  group_by(STU_ID) %>% 
+  arrange(STU_ID,Stu_DEMO_TIME_FRAME) %>% 
+  filter(str_detect(Stu_Term, "Fall...")) %>% 
+  #filter(Stu_DEMO_TIME_FRAME == max(Stu_DEMO_TIME_FRAME)) %>% 
+  #mutate(Last_Term=Stu_DEMO_TIME_FRAME) %>% 
+  select( STU_ID,Stu_DEMO_TIME_FRAME, contains("total")) %>% 
+ # filter(Stu_DEMO_TIME_FRAME>=201708) %>% 
+  mutate(Term_index =row_number()) %>% 
+  mutate(UWFGPA= Stu_TotalInstGradePoints /Stu_TotalInstHours)  
+  
+### cohort
+cohort_id <- cleanacex %>% 
+  filter(cohort_year == "17-18" | cohort_year =="18-19" | cohort_year =="19-20" | cohort_year =="20-21") %>% 
+  select(uwfid, cohort_year ) %>% 
+  unique()  
+cohort_id[cohort_id$cohort_year =="17-18", "cohort_year"] <- "201708"
+cohort_id[cohort_id$cohort_year =="18-19", "cohort_year"] <- "201808"
+cohort_id[cohort_id$cohort_year =="19-20", "cohort_year"] <- "201908"
+cohort_id[cohort_id$cohort_year =="20-21", "cohort_year"] <- "202008"
+
+
+
+ENC_acex_cohort <- merge(cohort_id, clean_ID_uwfid, by="uwfid", all.y=T) 
+ENC_acex_cohort1 <- ENC_acex_cohort[-400,]
+ENC_acex_cohort1[duplicated(ENC_acex_cohort1$uwfid),]
+ENC_acex_cohort1[(ENC_acex_cohort1$uwfid=="970522062"),]
+
+## each enc
+ENC_acex_each_cohort <- merge(ENC_acex_each, ENC_acex_cohort1, by="STU_ID", all.x = T) %>% 
+  group_by(STU_ID, Stu_DEMO_TIME_FRAME) %>% 
+  mutate(cohort_year = as.numeric(cohort_year)) %>% 
+  filter(Stu_DEMO_TIME_FRAME >= cohort_year) %>% 
+    group_by(STU_ID) %>% arrange(Stu_DEMO_TIME_FRAME) %>% 
+    mutate(Term_index1=row_number()) %>% 
+   mutate(UWFHrsbyYear=Stu_TotalInstHours - lag(Stu_TotalInstHours, default = Stu_TotalInstHours[1])) %>% 
+  mutate(Tracked=ifelse((UWFGPA>=3.00 & UWFHrsbyYear>=30.00), "on_trakc","off_track"))
+
+
+### degree and last info
+
+ENC_acex_each_cohort_lastinfo <- merge(ENC_acex_each_cohort,ENC_acex, by="STU_ID", all.x = T )
+ENC_acex_each_cohort_lastinfo1 <- merge(ENC_acex_each_cohort_lastinfo, acex_check1, by="STU_ID", all.x = T)  
+
+write.csv(ENC_acex_each_cohort_lastinfo1, "overall_acex_Ontrack_degree_Info_Only.csv")
+
+
+```
